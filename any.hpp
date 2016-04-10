@@ -68,19 +68,20 @@ private:
 namespace detail
 {
 
-template <typename _DeleterT>
+template <typename _DeleterT,
+          typename _AnyT>
 struct deleter
 {
-    ~deleter() { _DeleterT()(); }
+    ~deleter() { _DeleterT()(reinterpret_cast<_AnyT&>(*this)); }
 };
 
-template <>
-struct deleter<void> {};
+template <typename _AnyT>
+struct deleter<void, _AnyT> {};
 
 }
 
 template <std::size_t _N, typename _DeleterT = void>
-struct any : public detail::deleter<_DeleterT>
+struct any : public detail::deleter<_DeleterT, any<_N>>
 {
     typedef std::size_t size_type;
 
