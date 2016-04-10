@@ -1,31 +1,10 @@
-#include <iostream>
+#pragma once
+
 #include <type_traits>
 #include <cstring>
 #include <array>
 #include <cassert>
 #include <memory>
-
-struct A
-{
-    A(int i = 0xdeadbeef) : i_(i) {}
-
-    int i_;
-  //  std::string s;
-};
-
-namespace detail
-{
-
-template <typename _DeleterT>
-struct deleter
-{
-    _DeleterT d_;
-};
-
-template <>
-struct deleter<void> {};
-
-}
 
 #if 0
 
@@ -84,6 +63,23 @@ private:
 
 #endif
 
+
+
+namespace detail
+{
+
+template <typename _DeleterT>
+struct deleter
+{
+    ~deleter() { d_(); }
+    _DeleterT d_;
+};
+
+template <>
+struct deleter<void> {};
+
+}
+
 template <std::size_t _N, typename _DeleterT = void>
 struct any : private detail::deleter<_DeleterT>
 {
@@ -127,21 +123,3 @@ struct any : private detail::deleter<_DeleterT>
 private:
     std::array<char, _N> buff_;
 };
-
-
-int main()
-{
-    any<16> s;
-    s = 5;
-    assert(s.get<int>() == 5);
-
-    s = A(666);
-    assert(s.get<A>().i_ == 666);
-
-    A a(999);
-    s = a;
-    assert(s.get<A>().i_ == 999);
-
-
-    return 0;
-}
