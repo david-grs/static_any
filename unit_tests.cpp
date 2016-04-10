@@ -34,7 +34,7 @@ TEST(pod, assign_rvalue_struct)
 {
     any<16> a;
     a = A(0xdeadbeef);
-    ASSERT_EQ(a.get<A>(), 0xdeadbeef);
+    ASSERT_EQ(a.get<A>().m_i, 0xdeadbeef);
 }
 
 TEST(deleter, size)
