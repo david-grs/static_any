@@ -7,8 +7,6 @@ A container for generic (as *general*) data type &mdash; like boost.any &mdash; 
  - can only store trivially copyable types
 
 
----
-
 Example
 -------
 
