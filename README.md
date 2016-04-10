@@ -63,8 +63,8 @@ End of assembler dump.
 ```
 
 ### Drawbacks
- - Safety: Boost.Any stores the type and will throw an exception if you try to get a wrong type
- - Type support: Any.Trivial only supports trivially copyable types
+ - **Safety**: Boost.Any stores the type and will throw an exception if you try to get a wrong type
+ - **Type support**: Any.Trivial only supports trivially copyable types
 
 
 
