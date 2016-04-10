@@ -15,6 +15,18 @@ TEST(basic, size)
     ASSERT_EQ(16, sizeof(a));
 }
 
+TEST(basic, trivial)
+{
+    any<16> a;
+    ASSERT_TRUE(std::is_trivial<decltype(a)>::value);
+}
+
+TEST(basic, pod)
+{
+    any<16> a;
+    ASSERT_TRUE(std::is_pod<decltype(a)>::value);
+}
+
 TEST(pod, assign_rvalue_int)
 {
     any<16> a;
@@ -89,4 +101,30 @@ TEST(deleter, pointer_freed)
     any<16, del> a;
     a = B(1234);
     ASSERT_EQ(1234, *a.get<B>().m_i);
+}
+
+TEST(any_assignment, same_type)
+{
+    any<16> a;
+    a = 1234;
+
+    any<16> a2;
+    a2 = 0xdeadbeef;
+    a2 = a;
+
+    ASSERT_EQ(1234,  a.get<int>());
+    ASSERT_EQ(1234, a2.get<int>());
+}
+
+TEST(any_assignment, bigger_size)
+{
+    any<16> a;
+    a = 1234;
+
+    any<32> a2;
+    a2 = 0xdeadbeef;
+    a2 = a;
+
+    ASSERT_EQ(1234,  a.get<int>());
+    ASSERT_EQ(1234, a2.get<int>());
 }
