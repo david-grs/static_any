@@ -54,10 +54,20 @@ struct any : public detail::deleter<_DeleterT, any<_N>>
     }
 
     template <typename _T>
-    _T& get() { return reinterpret_cast<_T&>(*buff_.data()); }
+    typename std::enable_if<!std::is_pointer<_T>::value, _T&>::type
+    get() { return reinterpret_cast<_T&>(*buff_.data()); }
 
     template <typename _T>
-    const _T& get() const { return reinterpret_cast<_T&>(*buff_.data()); }
+    typename std::enable_if<!std::is_pointer<_T>::value, const _T&>::type
+    get() const { return reinterpret_cast<const _T>(*buff_.data()); }
+
+    template <typename _T>
+    typename std::enable_if<std::is_pointer<_T>::value, _T>::type
+    get() { return reinterpret_cast<_T>(buff_.data()); }
+
+    template <typename _T>
+    typename std::enable_if<std::is_pointer<_T>::value, const _T>::type
+    get() const { return reinterpret_cast<const _T>(buff_.data()); }
 
     static constexpr size_type size() { return _N; }
 
