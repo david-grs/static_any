@@ -50,7 +50,7 @@ struct any : public detail::deleter<_DeleterT, any<_N>>
         static_assert(std::is_trivially_copyable<_T>::value, "_T is not trivially copyable");
         static_assert(size() >= sizeof(_T), "_T is too big to be copied to any");
 
-        std::memmove(buff_.data(), (char*)&t, sizeof(_T));
+        std::memcpy(buff_.data(), (char*)&t, sizeof(_T));
     }
 
     template <typename _T>
