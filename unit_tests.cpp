@@ -9,6 +9,29 @@ struct A
     int m_i;
 };
 
+TEST(basic, readme_example)
+{
+    any<16> a;
+    static_assert(sizeof(a) == 16, "impossible");
+
+    a = 1234;
+    ASSERT_EQ(1234, a.get<int>());
+
+    a = "foobar";
+    ASSERT_EQ(std::string("foobar"), a.get<const char*>());
+
+    struct A
+    {
+        explicit A(long i = 0, double d = .0)
+         : i_(i), d_(d) {}
+
+        long i_;
+        double d_;
+    };
+
+    a = A(12, .34);
+}
+
 TEST(basic, size)
 {
     any<16> a;
@@ -113,7 +136,7 @@ TEST(any_assignment, same_type)
     a2 = a;
 
     ASSERT_EQ(1234,  a.get<int>());
-    ASSERT_EQ(1234, a2.get<int>());
+    ASSERT_EQ(1234, a2.get<unsigned int>());
 }
 
 TEST(any_assignment, bigger_size)
@@ -128,3 +151,18 @@ TEST(any_assignment, bigger_size)
     ASSERT_EQ(1234,  a.get<int>());
     ASSERT_EQ(1234, a2.get<int>());
 }
+
+/*
+TEST(exception, wrong_type)
+{
+    any<16> a;
+    a = 1234;
+
+    try {
+        a.get<double>();
+        FAIL();
+    }
+    catch(std::runtime_error&) { }
+}
+*/
+
