@@ -42,9 +42,9 @@ Comparison with Boost.Any
 -------------------------
 
 ### Advantages
- - Speed: Any.Trivial is ~50 times faster than Boost.Any, as there is no memory allocation or any other overhead around the data
- - Cache-friendly: Any.Trivial is stack-based, close to the other class attributes
- - No space overhead: 100% of the data space is useful
+ - **~50x faster** than Boost.Any, as there is no memory allocation or any other overhead around the data
+ - **Cache-friendly**: Any.Trivial is stack-based, close to the other class attributes
+ - **No space overhead**: 100% of the data space is useful
 
 Thus, the following code:
 ```c++
