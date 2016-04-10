@@ -48,9 +48,9 @@ TEST(deleter, size)
 
     {
         any<16, del> s;
+        ASSERT_EQ(16, sizeof(s));
     }
-    
+
     ASSERT_TRUE(deleter_called);
-    //ASSERT_EQ(16 + sizeof(void*), sizeof(s));
 }
 

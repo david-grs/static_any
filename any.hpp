@@ -71,8 +71,7 @@ namespace detail
 template <typename _DeleterT>
 struct deleter
 {
-    ~deleter() { d_(); }
-    _DeleterT d_;
+    ~deleter() { _DeleterT()(); }
 };
 
 template <>
@@ -81,7 +80,7 @@ struct deleter<void> {};
 }
 
 template <std::size_t _N, typename _DeleterT = void>
-struct any : private detail::deleter<_DeleterT>
+struct any : public detail::deleter<_DeleterT>
 {
     typedef std::size_t size_type;
 
