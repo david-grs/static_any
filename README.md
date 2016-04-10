@@ -38,3 +38,34 @@ Example
 ```
 
 
+Comparison with Boost.Any
+-------------------------
+
+### Advantages
+ - Speed: Any.Trivial is ~50 times faster than Boost.Any, as there is no memory allocation or any other overhead around the data
+ - Cache-friendly: Any.Trivial is stack-based, close to the other class attributes
+ - No space overhead: 100% of the data space is useful
+
+Thus, the following code:
+```c++
+void foo(any<16>& a)
+{
+    a = 1234;
+}
+```
+
+... is translated to:
+```
+Dump of assembler code for function foo(any<16ul, void>&):
+   0x0000000000431c50 <+0>:     mov    DWORD PTR [rdi],0x4d2
+   0x0000000000431c56 <+6>:     ret
+End of assembler dump.
+```
+
+### Drawbacks
+ - Safety: Boost.Any stores the type and will throw an exception if you try to get a wrong type
+ - Type support: Any.Trivial only supports trivially copyable types
+
+
+
+
