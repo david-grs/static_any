@@ -75,7 +75,7 @@ struct B
     int *m_i;
 };
 
-TEST(non_trivial_dtor, assign)
+TEST(deleter, pointer_freed)
 {
     struct del
     {
