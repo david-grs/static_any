@@ -1,0 +1,1 @@
+- adding type safety by storing type_info of stored object - takes 8 additional bytes though
