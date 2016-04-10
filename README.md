@@ -68,4 +68,8 @@ End of assembler dump.
 
 
 
+Roadmap
+-------
 
+### 0.1
+- Type safety: typeid() of the stored type will be saved and checked when accessing the object
