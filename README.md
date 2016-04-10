@@ -7,6 +7,8 @@ A container for generic (as *general*) data type &mdash; like boost.any &mdash; 
  - can only store trivially copyable types
 
 
+---
+
 Example
 -------
 
@@ -38,6 +40,8 @@ Example
 ```
 
 
+---
+
 Comparison with Boost.Any
 -------------------------
 
@@ -67,6 +71,7 @@ End of assembler dump.
  - **Type support**: Any.Trivial only supports trivially copyable types
 
 
+---
 
 Roadmap
 -------
