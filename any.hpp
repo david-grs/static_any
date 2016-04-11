@@ -92,38 +92,44 @@ struct any_p
     /// Creates empty object
     any_p() = default;
 
-    /// Creates any_p containing a copy v
-//    template<typename _T>
-//    any_p(const _T& v)
-//    {
-//        copy_object(v);
-//    }
-
-    /// Creates any_p containing moved v
-    template<typename _T>
+    /// Creates any_p containing copied/moved v
+    template<typename _T, typename X = std::enable_if_t<!std::is_same<any_p, std::remove_reference_t<_T>>::value>>
     any_p(_T&& v)
     {
         copy_or_move(std::forward<_T>(v));
     }
+
+    // Copy from another any of the same size
+    any_p(const any_p& another)
+    {
+        copy_from_another(another);
+    }
+
+    any_p(any_p&& another)
+    {
+        copy_from_another(another);
+    }
+
+    // TODO bonus points for copying from any of the same _or smaller_ size
+    // TODO: maybe size check should be performed at runtime?
 
     ~any_p()
     {
         destroy();
     }
 
-//    template <typename _T>
-//    any_p& operator=(const _T& t)
-//    {
-//        destroy();
-//        copy_object(t);
-//        return *this;
-//    }
-
-    template <typename _T>
+    template <typename _T, typename X = std::enable_if_t<!std::is_same<any_p, std::remove_reference_t<_T>>::value>>
     any_p& operator=(_T&& t)
     {
         destroy();
         copy_or_move(std::forward<_T>(t));
+        return *this;
+    }
+
+    any_p& operator=(const any_p& another)
+    {
+        destroy();
+        copy_from_another(another);
         return *this;
     }
 
@@ -189,17 +195,6 @@ private:
         return &any_p::operation<_T>;
     }
 
-//    template <typename _T>
-//    void copy_object(const _T& t)
-//    {
-//        static_assert(size() >= sizeof(_T), "_T is too big to be copied to any_p");
-//        assert(!function_);
-//        using NonConstT = std::remove_cv_t<_T>;
-//        function_ = get_function_for_type<NonConstT>();
-//        _T* non_const_t = const_cast<_T*>(&t);
-//        function_(operation_t::copy, buff_.data(), non_const_t);
-//    }
-
     template <typename _T>
     void copy_or_move(_T&& t)
     {
@@ -244,6 +239,16 @@ private:
     _T* as()
     {
         return reinterpret_cast<_T*>(buff_.data());
+    }
+
+    void copy_from_another(const any_p& another)
+    {
+        if (another.function_)
+        {
+            function_= another.function_;
+            char* other_data = const_cast<char*>(another.buff_.data());
+            function_(operation_t::copy, buff_.data(), other_data);
+        }
     }
 
     std::array<char, _N> buff_;

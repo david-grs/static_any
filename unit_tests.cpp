@@ -325,3 +325,34 @@ TEST(any_p, mutable_get)
     auto i = const_ref.get<int>();
     ASSERT_EQ(6, i);
 }
+
+TEST(any_p, any_to_any_copy_uninitialized)
+{
+    any_p<16> a;
+    any_p<16> b(a);
+
+    ASSERT_TRUE(a.empty());
+    ASSERT_TRUE(b.empty());
+}
+
+TEST(any_p, any_to_any_copy_construction)
+{
+    any_p<16> a(7);
+    any_p<16> b(a);
+
+    ASSERT_EQ(7, a.get<int>());
+    ASSERT_EQ(7, b.get<int>());
+}
+
+TEST(any_p, any_to_any_assignment)
+{
+    any_p<32> a(std::string("Hello"));
+    any_p<32> b;
+
+    ASSERT_TRUE(b.empty());
+    b = a;
+    ASSERT_FALSE(b.empty());
+
+    ASSERT_EQ("Hello", b.get<std::string>());
+    ASSERT_EQ("Hello", a.get<std::string>());
+}
