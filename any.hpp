@@ -6,7 +6,6 @@
 #include <type_traits>
 #include <typeinfo>
 #include <cassert>
-#include <iostream>
 
 namespace detail
 {
@@ -77,8 +76,6 @@ private:
 
     std::array<char, _N> buff_;
 };
-
-template<typename T> class TP;
 
 template <std::size_t _N>
 struct any_p
