@@ -9,7 +9,7 @@ struct A
     int m_i;
 };
 
-TEST(basic, readme_example)
+TEST(any_basic, readme_example)
 {
     any<16> a;
     static_assert(sizeof(a) == 16, "impossible");
@@ -32,32 +32,32 @@ TEST(basic, readme_example)
     a = A(12, .34);
 }
 
-TEST(basic, size)
+TEST(any_basic, size)
 {
     any<16> a;
     ASSERT_EQ(16, sizeof(a));
 }
 
-TEST(basic, trivial)
+TEST(any_basic, trivial)
 {
     any<16> a;
     ASSERT_TRUE(std::is_trivial<decltype(a)>::value);
 }
 
-TEST(basic, pod)
+TEST(any_basic, pod)
 {
     any<16> a;
     ASSERT_TRUE(std::is_pod<decltype(a)>::value);
 }
 
-TEST(pod, assign_rvalue_int)
+TEST(any_pod, assign_rvalue_int)
 {
     any<16> a;
     a = 5;
     ASSERT_EQ(5, a.get<int>());
 }
 
-TEST(pod, assign_lvalue_int)
+TEST(any_pod, assign_lvalue_int)
 {
     any<16> a;
     int i = 6;
@@ -65,14 +65,14 @@ TEST(pod, assign_lvalue_int)
     ASSERT_EQ(6, a.get<int>());
 }
 
-TEST(pod, assign_rvalue_struct)
+TEST(any_pod, assign_rvalue_struct)
 {
     any<16> a;
     a = A(0xdeadbeef);
     ASSERT_EQ(0xdeadbeef, a.get<A>().m_i);
 }
 
-TEST(deleter, size)
+TEST(any_deleter, size)
 {
     struct del
     {
@@ -83,7 +83,7 @@ TEST(deleter, size)
     ASSERT_EQ(16, sizeof(s));
 }
 
-TEST(deleter, called)
+TEST(any_deleter, called)
 {
     static bool deleter_called = false;
 
@@ -110,7 +110,7 @@ struct B
     int *m_i;
 };
 
-TEST(deleter, pointer_freed)
+TEST(any_deleter, pointer_freed)
 {
     struct del
     {
@@ -165,4 +165,111 @@ TEST(exception, wrong_type)
     catch(std::runtime_error&) { }
 }
 */
+
+struct CallCounter
+{
+    CallCounter() { default_constructions++; }
+    CallCounter(const CallCounter&) { copy_constructions++; }
+    CallCounter(CallCounter&&) { move_constructions++; }
+    ~CallCounter() { destructions++; }
+
+    static void reset_counters()
+    {
+        default_constructions = 0;
+        copy_constructions = 0;
+        move_constructions = 0;
+        destructions = 0;
+    }
+
+    static int default_constructions;
+    static int copy_constructions;
+    static int move_constructions;
+    static int destructions;
+};
+
+int CallCounter::default_constructions = 0;
+int CallCounter::copy_constructions = 0;
+int CallCounter::move_constructions = 0;
+int CallCounter::destructions = 0;
+
+TEST(any_p, default_constructed_is_empty)
+{
+    any_p<16> a;
+    ASSERT_TRUE(a.empty());
+}
+
+TEST(any_p, contructed_with_param_non_empty)
+{
+    any_p<16> a(77); // will contain integer
+    ASSERT_FALSE(a.empty());
+}
+
+TEST(any_p, is_stored_type)
+{
+    any_p<16> a(77); // will contain integer
+    ASSERT_TRUE(a.is_stored_type<int>());
+    ASSERT_FALSE(a.is_stored_type<double>());
+}
+
+TEST(any_p, move_construct)
+{
+    CallCounter::reset_counters();
+    CallCounter counter;
+    any_p<16> a(std::move(counter));
+
+    ASSERT_EQ(1, CallCounter::default_constructions);
+    ASSERT_EQ(0, CallCounter::copy_constructions);
+    ASSERT_EQ(1, CallCounter::move_constructions);
+    ASSERT_EQ(0, CallCounter::destructions);
+}
+
+TEST(any_p, copy_construct)
+{
+    CallCounter::reset_counters();
+    CallCounter counter;
+    any_p<16> a(counter);
+
+    ASSERT_EQ(1, CallCounter::default_constructions);
+    ASSERT_EQ(1, CallCounter::copy_constructions);
+    ASSERT_EQ(0, CallCounter::move_constructions);
+    ASSERT_EQ(0, CallCounter::destructions);
+}
+
+TEST(any_p, destruction)
+{
+    CallCounter::reset_counters();
+    CallCounter counter;
+    {
+        any_p<16> a(counter);
+    }
+
+    ASSERT_EQ(1, CallCounter::destructions);
+}
+
+TEST(any_p, move_assignment)
+{
+    CallCounter::reset_counters();
+    CallCounter counter;
+
+    any_p<16> a;
+    a = std::move(counter);
+
+    ASSERT_EQ(1, CallCounter::default_constructions);
+    ASSERT_EQ(0, CallCounter::copy_constructions);
+    ASSERT_EQ(1, CallCounter::move_constructions);
+}
+
+TEST(any_p, reassignment)
+{
+    CallCounter::reset_counters();
+    CallCounter counter;
+
+    any_p<16> a(counter);
+    a = counter;
+
+    ASSERT_EQ(1, CallCounter::default_constructions);
+    ASSERT_EQ(1, CallCounter::copy_constructions);
+    ASSERT_EQ(1, CallCounter::move_constructions);
+    ASSERT_EQ(1, CallCounter::destructions);
+}
 
