@@ -246,6 +246,19 @@ TEST(any_p, destruction)
     ASSERT_EQ(1, CallCounter::destructions);
 }
 
+TEST(any_p, copy_assignment)
+{
+    CallCounter::reset_counters();
+    CallCounter counter;
+
+    any_p<16> a;
+    a = counter;
+
+    ASSERT_EQ(1, CallCounter::default_constructions);
+    ASSERT_EQ(1, CallCounter::copy_constructions);
+    ASSERT_EQ(0, CallCounter::move_constructions);
+}
+
 TEST(any_p, move_assignment)
 {
     CallCounter::reset_counters();
@@ -268,8 +281,47 @@ TEST(any_p, reassignment)
     a = counter;
 
     ASSERT_EQ(1, CallCounter::default_constructions);
-    ASSERT_EQ(1, CallCounter::copy_constructions);
-    ASSERT_EQ(1, CallCounter::move_constructions);
+    ASSERT_EQ(2, CallCounter::copy_constructions);
+    ASSERT_EQ(0, CallCounter::move_constructions);
     ASSERT_EQ(1, CallCounter::destructions);
 }
 
+TEST(any_p, not_empty_after_assignment)
+{
+    any_p<16> a;
+    ASSERT_TRUE(a.empty());
+    a = 7;
+    ASSERT_FALSE(a.empty());
+}
+
+TEST(any_p, different_type_after_assignment)
+{
+    any_p<16> a(7);
+    ASSERT_TRUE(a.is_stored_type<int>());
+    ASSERT_FALSE(a.is_stored_type<double>());
+    a = 3.14;
+    ASSERT_FALSE(a.is_stored_type<int>());
+    ASSERT_TRUE(a.is_stored_type<double>());
+}
+
+TEST(any_p, get_good_type)
+{
+    any_p<16> a(7);
+    auto i = a.get<int>();
+    ASSERT_EQ(7, i);
+}
+
+TEST(any_p, get_bad_type)
+{
+    any_p<16> a(7);
+    EXPECT_THROW(a.get<double>(), std::bad_cast);
+}
+
+TEST(any_p, mutable_get)
+{
+    any_p<16> a(7);
+    a.get<int>() = 6;
+    const any_p<16>& const_ref = a;
+    auto i = const_ref.get<int>();
+    ASSERT_EQ(6, i);
+}
