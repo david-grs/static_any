@@ -17,8 +17,8 @@ TEST(any_basic, readme_example)
     a = 1234;
     ASSERT_EQ(1234, a.get<int>());
 
-    a = "foobar";
-    ASSERT_EQ(std::string("foobar"), a.get<const char*>());
+    a = "Hello world";
+    ASSERT_EQ(std::string("Hello world"), a.get<const char*>());
 
     struct A
     {
@@ -251,7 +251,7 @@ TEST(any_p, copy_assignment)
     CallCounter::reset_counters();
     CallCounter counter;
 
-    any_p<16> a;
+    any_p<16> a(1);
     a = counter;
 
     ASSERT_EQ(1, CallCounter::default_constructions);
@@ -355,4 +355,35 @@ TEST(any_p, any_to_any_assignment)
 
     ASSERT_EQ("Hello", b.get<std::string>());
     ASSERT_EQ("Hello", a.get<std::string>());
+}
+
+TEST(any_p, any_to_any_move_construction)
+{
+    any_p<32> a(std::string("Hello"));
+    any_p<32> b = std::move(a);
+
+    ASSERT_FALSE(a.empty());
+    ASSERT_FALSE(b.empty());
+
+    ASSERT_EQ("Hello", b.get<std::string>());
+}
+
+TEST(any_p, any_to_bigger_any)
+{
+    any_p<16> a(1);
+    ASSERT_EQ(1, a.get<int>());
+
+    any_p<32> b(2);
+    b = a;
+
+    ASSERT_EQ(1, b.get<int>());
+}
+
+TEST(any_p, any_to_bigger_any_copy)
+{
+    any_p<16> a(1);
+    ASSERT_EQ(1, a.get<int>());
+
+    any_p<32> b = a;
+    ASSERT_EQ(1, b.get<int>());
 }
