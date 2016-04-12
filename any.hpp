@@ -7,77 +7,7 @@
 #include <typeinfo>
 #include <cassert>
 
-namespace detail
-{
-
-template <typename _DeleterT,
-          typename _AnyT>
-struct deleter
-{
-    ~deleter() { _DeleterT()(reinterpret_cast<_AnyT&>(*this)); }
-};
-
-template <typename _AnyT>
-struct deleter<void, _AnyT> {};
-
-}
-
-template <std::size_t _N, typename _DeleterT = void>
-struct any : public detail::deleter<_DeleterT, any<_N>>
-{
-    typedef std::size_t size_type;
-
-    static constexpr size_type size() { return _N; }
-
-    template <typename _T,
-              typename _D = _DeleterT>
-    typename std::enable_if<std::is_same<_D, void>::value, any&>::type
-    operator=(_T&& t)
-    {
-        static_assert(std::is_trivially_destructible<_T>::value, "_T is not trivially destructible and does not use any deleter");
-        copy_object(std::move(t));
-        return *this;
-    }
-
-    template <typename _T,
-              typename _D = _DeleterT>
-    typename std::enable_if<!std::is_same<_D, void>::value, any&>::type
-    operator=(_T&& t)
-    {
-        copy_object(std::move(t));
-        return *this;
-    }
-
-    template <typename _T>
-    typename std::enable_if<!std::is_pointer<_T>::value, _T&>::type
-    get() { return reinterpret_cast<_T&>(*buff_.data()); }
-
-    template <typename _T>
-    typename std::enable_if<!std::is_pointer<_T>::value, const _T&>::type
-    get() const { return reinterpret_cast<const _T&>(*buff_.data()); }
-
-    template <typename _T>
-    typename std::enable_if<std::is_pointer<_T>::value, _T>::type
-    get() { return reinterpret_cast<_T>(buff_.data()); }
-
-    template <typename _T>
-    typename std::enable_if<std::is_pointer<_T>::value, const _T>::type
-    get() const { return reinterpret_cast<const _T>(buff_.data()); }
-
-private:
-    template <typename _T>
-    void copy_object(_T&& t)
-    {
-        static_assert(std::is_trivially_copyable<_T>::value, "_T is not trivially copyable");
-        static_assert(size() >= sizeof(_T), "_T is too big to be copied to any");
-
-        std::memcpy(buff_.data(), (char*)&t, sizeof(_T));
-    }
-
-    std::array<char, _N> buff_;
-};
-
-namespace detail { namespace any_p {
+namespace detail { namespace any {
 
 // Pointer to administrative function, function that will by type-specific, and will be able to perform all the required operations
 enum class operation_t { copy, move, destroy };
@@ -111,93 +41,85 @@ static void operation(operation_t operation, void* this_void_ptr, void* other_vo
 template<typename _T>
 static function_ptr_t get_function_for_type()
 {
-    return &any_p::operation<std::remove_cv_t<std::remove_reference_t<_T>>>;
+    return &any::operation<std::remove_cv_t<std::remove_reference_t<_T>>>;
 }
 
 }}
 
 template <std::size_t _N>
-struct any_p
+struct any
 {
     typedef std::size_t size_type;
 
-    any_p() = default;
+    any() = default;
 
-    ~any_p()
+    ~any()
     {
         destroy();
     }
 
     template<typename _T>
-    any_p(_T&& v)
+    any(_T&& v)
     {
         copy_or_move(std::forward<_T>(v));
     }
 
-    any_p(const any_p& another)
+    any(const any& another)
     {
         copy_from_another(another);
     }
 
-    any_p(any_p& another)
+    any(any& another)
     {
         copy_from_another(another);
     }
 
-    any_p(any_p&& another)
-    {
-        copy_from_another(another);
-    }
-
-    template<std::size_t _M>
-    any_p(const any_p<_M>& another)
+    any(any&& another)
     {
         copy_from_another(another);
     }
 
     template<std::size_t _M>
-    any_p(any_p<_M>& another)
+    any(const any<_M>& another)
     {
         copy_from_another(another);
     }
 
     template<std::size_t _M>
-    any_p(any_p<_M>&& another)
+    any(any<_M>& another)
     {
         copy_from_another(another);
     }
 
     template<std::size_t _M>
-    any_p& operator=(const any_p<_M>& another)
+    any(any<_M>&& another)
+    {
+        copy_from_another(another);
+    }
+
+    template<std::size_t _M>
+    any& operator=(const any<_M>& another)
     {
         destroy();
         copy_from_another(another);
         return *this;
     }
 
-    any_p& operator=(const any_p& another)
+    any& operator=(const any& another)
     {
         destroy();
         copy_from_another(another);
         return *this;
     }
 
-    any_p& operator=(any_p& another)
+    any& operator=(any& another)
     {
         destroy();
         copy_from_another(another);
         return *this;
     }
 
-    any_p& operator=(any_p&& another)
-    {
-        destroy();
-        copy_from_another(another);
-        return *this;
-    }
-
-    template<std::size_t _M>
-    any_p& operator=(any_p<_M>& another)
+    any& operator=(any&& another)
     {
         destroy();
         copy_from_another(another);
@@ -205,7 +127,15 @@ struct any_p
     }
 
     template<std::size_t _M>
-    any_p& operator=(any_p<_M>&& another)
+    any& operator=(any<_M>& another)
+    {
+        destroy();
+        copy_from_another(another);
+        return *this;
+    }
+
+    template<std::size_t _M>
+    any& operator=(any<_M>&& another)
     {
         destroy();
         copy_from_another(another);
@@ -213,7 +143,7 @@ struct any_p
     }
 
     template <typename _T>
-    any_p& operator=(const _T& t)
+    any& operator=(const _T& t)
     {
         destroy();
         copy_or_move(std::forward<_T>(t));
@@ -221,7 +151,7 @@ struct any_p
     }
 
     template <typename _T>
-    any_p& operator=(_T&& t)
+    any& operator=(_T&& t)
     {
         destroy();
         copy_or_move(std::forward<_T>(t));
@@ -249,7 +179,7 @@ struct any_p
     template <typename _T>
     bool is_stored_type() const
     {
-        return function_ == detail::any_p::get_function_for_type<_T>();
+        return function_ == detail::any::get_function_for_type<_T>();
     }
 
     bool empty() const { return function_ == nullptr; }
@@ -257,16 +187,16 @@ struct any_p
     static constexpr size_type size() { return _N; }
 
 private:
-    using operation_t = detail::any_p::operation_t;
-    using function_ptr_t = detail::any_p::function_ptr_t;
+    using operation_t = detail::any::operation_t;
+    using function_ptr_t = detail::any::function_ptr_t;
 
     template <typename _T>
     void copy_or_move(_T&& t)
     {
-        static_assert(size() >= sizeof(_T), "_T is too big to be copied to any_p");
+        static_assert(size() >= sizeof(_T), "_T is too big to be copied to any");
         assert(function_ == nullptr);
 
-        function_ = detail::any_p::get_function_for_type<_T>();
+        function_ = detail::any::get_function_for_type<_T>();
 
         using NonConstT = std::remove_cv_t<std::remove_reference_t<_T>>;
         NonConstT* non_const_t = const_cast<NonConstT*>(&t);
@@ -310,7 +240,7 @@ private:
     }
 
     template<std::size_t _M>
-    void copy_from_another(const any_p<_M>& another)
+    void copy_from_another(const any<_M>& another)
     {
         if (another.function_)
         {
@@ -325,5 +255,5 @@ private:
 
 
     template<std::size_t _S>
-    friend class any_p;
+    friend class any;
 };
