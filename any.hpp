@@ -97,14 +97,6 @@ struct any
         copy_from_another(another);
     }
 
-    template<std::size_t _M>
-    any& operator=(const any<_M>& another)
-    {
-        destroy();
-        copy_from_another(another);
-        return *this;
-    }
-
     any& operator=(const any& another)
     {
         destroy();
@@ -120,6 +112,14 @@ struct any
     }
 
     any& operator=(any&& another)
+    {
+        destroy();
+        copy_from_another(another);
+        return *this;
+    }
+
+    template<std::size_t _M>
+    any& operator=(const any<_M>& another)
     {
         destroy();
         copy_from_another(another);
