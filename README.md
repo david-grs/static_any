@@ -2,11 +2,13 @@ any\<S\>
 ========
 A container for generic (as *general*) data type &mdash; like boost.any. However:
 
- - It is **~20x faster** than Boost.Any, mainly because there is no memory allocation
+ - It is **~10x faster** than boost.any, mainly because there is no memory allocation
  - As it lies on the stack, it is **cache-friendly**, close to your other class attributes
- - There is a very **small spaceoverhead**: a fixed overhead of 8 bytes
+ - There is a very **small space overhead**: a fixed overhead of 8 bytes
 
-Like boost.any, it is **safe** by checking the stored type before any conversions.
+any\<S\> is also **safe**:
+ - compile time check during the assignment, to ensure that its buffer is big enough to store the value
+ - runtime check before any conversions, to ensure that the stored type is the one's requested by the user
 
 
 Example
