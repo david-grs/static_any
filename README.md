@@ -1,5 +1,5 @@
-any<S>
-======
+any\<S\>
+========
 A container for generic (as *general*) data type &mdash; like boost.any. However:
 
  - It is **~20x faster** than Boost.Any, mainly because there is no memory allocation
