@@ -10,32 +10,38 @@
 namespace detail { namespace any {
 
 // Pointer to administrative function, function that will by type-specific, and will be able to perform all the required operations
-enum class operation_t { copy, move, destroy };
-using function_ptr_t = void(*)(operation_t operation, void* this_ptr, void* other_ptr);
+enum class operation_t { query_type, copy, move, destroy };
+using function_ptr_t = const std::type_info&(*)(operation_t operation, void* this_ptr, void* other_ptr);
 
 template<typename _T>
-static void operation(operation_t operation, void* this_void_ptr, void* other_void_ptr)
+static const std::type_info& operation(operation_t operation, void* this_void_ptr, void* other_void_ptr)
 {
     _T* this_ptr = reinterpret_cast<_T*>(this_void_ptr);
     _T* other_ptr = reinterpret_cast<_T*>(other_void_ptr);
 
+    assert(this_ptr);
+
     switch(operation)
     {
+        case operation_t::query_type:
+            break;
+
         case operation_t::copy:
-            assert(this_ptr);
             assert(other_ptr);
             new(this_ptr)_T(*other_ptr);
             break;
+
         case operation_t::move:
-            assert(this_ptr);
             assert(other_ptr);
             new(this_ptr)_T(std::move(*other_ptr));
             break;
+
         case operation_t::destroy:
-            assert(this_ptr);
             this_ptr->~_T();
             break;
     }
+
+    return typeid(_T);
 }
 
 template<typename _T>
@@ -180,6 +186,11 @@ struct any
     bool is_stored_type() const
     {
         return function_ == detail::any::get_function_for_type<_T>();
+    }
+
+    const std::type_info& type() const
+    {
+        return function_(operation_t::query_type, const_cast<any*>(this), nullptr);
     }
 
     bool empty() const { return function_ == nullptr; }

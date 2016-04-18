@@ -355,3 +355,12 @@ TEST(any, any_cast_reference_wrong_type)
     EXPECT_THROW(any_cast<float>(a), bad_any_cast);
 }
 
+TEST(any, query_type)
+{
+    any<16> a(7);
+    ASSERT_EQ(typeid(int), a.type());
+
+    a = std::string("f00");
+    ASSERT_EQ(typeid(std::string), a.type());
+}
+
