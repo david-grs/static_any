@@ -349,3 +349,45 @@ _T& any<_S>::get()
 {
     return any_cast<_T>(*this);
 }
+
+template <std::size_t _N>
+struct any_t
+{
+    typedef std::size_t size_type;
+
+    static constexpr size_type size() { return _N; }
+
+    any_t() = default;
+    any_t(const any_t&) = default;
+
+    template <typename _ValueT>
+    any_t(_ValueT&& t)
+    {
+        copy(std::forward<_ValueT>(t));
+    }
+
+    template <typename _ValueT>
+    any_t& operator=(_ValueT&& t)
+    {
+        copy(std::forward<_ValueT>(t));
+        return *this;
+    }
+
+    template <typename _ValueT>
+    _ValueT& get() { return *reinterpret_cast<_ValueT*>(buff_.data()); }
+
+    template <typename _ValueT>
+    const _ValueT& get() const { return *reinterpret_cast<const _ValueT*>(buff_.data()); }
+
+private:
+    template <typename _ValueT>
+    void copy(_ValueT&& t)
+    {
+        static_assert(std::is_trivially_copyable<_ValueT>::value, "_ValueT is not trivially copyable");
+        static_assert(size() >= sizeof(_ValueT), "_ValueT is too big to be copied to any");
+
+        std::memcpy(buff_.data(), (char*)&t, sizeof(_ValueT));
+    }
+
+    std::array<char, _N> buff_;
+};

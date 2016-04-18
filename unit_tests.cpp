@@ -379,3 +379,9 @@ TEST(any, query_type)
     ASSERT_EQ(typeid(std::string), a.type());
 }
 
+TEST(any_t, simple)
+{
+    any_t<16> a(7);
+    ASSERT_EQ(7, a.get<int>());
+}
+
