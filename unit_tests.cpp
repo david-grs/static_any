@@ -355,6 +355,21 @@ TEST(any, any_cast_reference_wrong_type)
     EXPECT_THROW(any_cast<float>(a), bad_any_cast);
 }
 
+TEST(any, any_cast_reference_wrong_type_from_to)
+{
+    any<16> a(7);
+
+    try {
+        auto f = any_cast<float>(a);
+        FAIL();
+        ASSERT_EQ(.1234, f); // to avoid a warning, never reached
+    }
+    catch(bad_any_cast& ex) {
+        ASSERT_EQ(typeid(int), ex.stored_type());
+        ASSERT_EQ(typeid(float), ex.target_type());
+    }
+}
+
 TEST(any, query_type)
 {
     any<16> a(7);

@@ -6,6 +6,8 @@
 #include <type_traits>
 #include <typeinfo>
 #include <cassert>
+#include <sstream>
+#include <string>
 
 namespace detail { namespace any {
 
@@ -285,10 +287,31 @@ private:
 
 struct bad_any_cast : public std::bad_cast
 {
-    virtual const char *what() const throw()
+    bad_any_cast(const std::type_info& from,
+                 const std::type_info& to)
+    : from_(from),
+      to_(to)
     {
-        return "bad_any_cast: failed conversion using any_cast";
+        std::ostringstream oss;
+        oss << "failed conversion using any_cast: stored type "
+            << from.name()
+            << ", trying to cast to "
+            << to.name();
+        reason_ = oss.str();
     }
+
+    const std::type_info& stored_type() const { return from_; }
+    const std::type_info& target_type() const { return to_; }
+
+    virtual const char* what() const throw()
+    {
+        return reason_.c_str();
+    }
+
+private:
+    const std::type_info& from_;
+    const std::type_info& to_;
+    std::string reason_;
 };
 
 template <typename _ValueT,
@@ -313,7 +336,7 @@ template <typename _ValueT,
 inline _ValueT& any_cast(any<_S>& a)
 {
     if (!a.template is_stored_type<_ValueT>())
-        throw bad_any_cast();
+        throw bad_any_cast(a.type(), typeid(_ValueT));
 
     return *a.template as<_ValueT>();
 }
