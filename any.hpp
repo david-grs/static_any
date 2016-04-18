@@ -167,22 +167,10 @@ struct any
     }
 
     template<typename _T>
-    const _T& get() const
-    {
-        if (!is_stored_type<_T>())
-            throw std::bad_cast();
-
-        return *as<_T>();
-    }
+    inline const _T& get() const;
 
     template<typename _T>
-    _T& get()
-    {
-        if (!is_stored_type<_T>())
-            throw std::bad_cast();
-
-        return *as<_T>();
-    }
+    inline _T& get();
 
     template <typename _T>
     bool is_stored_type() const
@@ -348,4 +336,16 @@ inline const _ValueT& any_cast(const any<_S>& a)
     return any_cast<const _ValueT>(const_cast<any<_S>&>(a));
 }
 
+template <std::size_t _S>
+template <typename _T>
+const _T& any<_S>::get() const
+{
+    return any_cast<_T>(*this);
+}
 
+template <std::size_t _S>
+template <typename _T>
+_T& any<_S>::get()
+{
+    return any_cast<_T>(*this);
+}
