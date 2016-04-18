@@ -43,13 +43,13 @@ Example
 
 ---
 
-any\_t<S>
-=========
-A container similar to any<S>, but for trivially copyable types only. The differences:
+any\_t\<S\>
+===========
+A container similar to any\<S\>, but for trivially copyable types only. The differences:
 
- - No space overhead at all
- - Unsafe: there is no check when you try to access your data
- - Faster, as it eliminates few branches and assignments around type safety
+ - **No space overhead**
+ - **Faster**
+ - **Unsafe**: there is no check when you try to access your data
 
 On my laptop with a i7-3537U CPU, I got the following results when benchmarking during one second the assignment of a double to boost.any, any<S> and any\_t<S>:
 
