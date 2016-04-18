@@ -186,6 +186,15 @@ struct any
 
     static constexpr size_type size() { return _N; }
 
+    // Initializes with object of type T, created in-place with specified constructor params
+    template<typename _T, typename... Args>
+    void emplace(Args&&... args)
+    {
+        destroy();
+        new(buff_.data()) _T(std::forward<Args>(args)...);
+        function_ = detail::any::get_function_for_type<_T>();
+    }
+
 private:
     using operation_t = detail::any::operation_t;
     using function_ptr_t = detail::any::function_ptr_t;
