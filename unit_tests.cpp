@@ -300,3 +300,58 @@ TEST(any, destroyed_after_emplace)
     EXPECT_EQ(1, CallCounter::destructions);
 }
 
+TEST(any, any_cast_pointer_correct_type)
+{
+    any<16> a(7);
+    ASSERT_EQ(7, *any_cast<int>(&a));
+}
+
+TEST(any, any_cast_pointer_constness)
+{
+    any<16> a(7);
+    const auto* a2 = &a;
+
+    auto* pv  = any_cast<int>(&a);
+    auto* pv2 = any_cast<int>(a2);
+
+    ASSERT_FALSE(std::is_const<std::remove_pointer<decltype(pv)>::type>::value);
+    ASSERT_TRUE(std::is_const<std::remove_pointer<decltype(pv2)>::type>::value);
+
+    ASSERT_EQ(7, *pv);
+    ASSERT_EQ(7, *pv2);
+}
+
+TEST(any, any_cast_pointer_wrong_type)
+{
+    any<16> a(7);
+    ASSERT_EQ(nullptr, any_cast<float>(&a));
+}
+
+TEST(any, any_cast_reference_correct_type)
+{
+    any<16> a(7);
+    ASSERT_EQ(7, any_cast<int>(a));
+}
+
+
+TEST(any, any_cast_reference_constness)
+{
+    any<16> a(7);
+    const auto& a2 = a;
+
+    auto& pv = any_cast<int>(a);
+    auto& pv2 = any_cast<int>(a2);
+
+    ASSERT_FALSE(std::is_const<std::remove_reference<decltype(pv)>::type>::value);
+    ASSERT_TRUE(std::is_const<std::remove_reference<decltype(pv2)>::type>::value);
+
+    ASSERT_EQ(7, pv);
+    ASSERT_EQ(7, pv2);
+}
+
+TEST(any, any_cast_reference_wrong_type)
+{
+    any<16> a(7);
+    EXPECT_THROW(any_cast<float>(a), bad_any_cast);
+}
+

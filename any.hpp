@@ -262,7 +262,56 @@ private:
     std::array<char, _N> buff_;
     function_ptr_t function_ = nullptr;
 
-
     template<std::size_t _S>
     friend class any;
+
+    template<typename _ValueT, std::size_t _S>
+    friend _ValueT* any_cast(any<_S>*);
+
+    template<typename _ValueT, std::size_t _S>
+    friend _ValueT& any_cast(any<_S>&);
 };
+
+struct bad_any_cast : public std::bad_cast
+{
+    virtual const char *what() const throw()
+    {
+        return "bad_any_cast: failed conversion using any_cast";
+    }
+};
+
+template <typename _ValueT,
+          std::size_t _S>
+inline _ValueT* any_cast(any<_S>* a)
+{
+    if (!a->template is_stored_type<_ValueT>())
+        return nullptr;
+
+    return a->template as<_ValueT>();
+}
+
+template <typename _ValueT,
+          std::size_t _S>
+inline const _ValueT* any_cast(const any<_S>* a)
+{
+    return any_cast<const _ValueT>(const_cast<any<_S>*>(a));
+}
+
+template <typename _ValueT,
+          std::size_t _S>
+inline _ValueT& any_cast(any<_S>& a)
+{
+    if (!a.template is_stored_type<_ValueT>())
+        throw bad_any_cast();
+
+    return *a.template as<_ValueT>();
+}
+
+template <typename _ValueT,
+          std::size_t _S>
+inline const _ValueT& any_cast(const any<_S>& a)
+{
+    return any_cast<const _ValueT>(const_cast<any<_S>&>(a));
+}
+
+
