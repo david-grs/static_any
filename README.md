@@ -1,37 +1,38 @@
-Any.Trivial
-===========
-A container for generic (as *general*) data type &mdash; like boost.any &mdash; but :
+any<S>
+======
+A container for generic (as *general*) data type &mdash; like boost.any. However:
 
- - is stack-based, i.e. does not do any memory allocation
- - is a trivial type
- - can only store trivially copyable types
+ - It is **~20x faster** than Boost.Any, mainly because there is no memory allocation
+ - As it lies on the stack, it is **cache-friendly**, close to your other class attributes
+ - There is a very **small spaceoverhead**: a fixed overhead of 8 bytes
+
+Like boost.any, it is **safe** by checking the stored type before any conversions.
 
 
 Example
 -------
 
 ```c++
-    any<16> a;
-    static_assert(sizeof(a) == 16, "impossible");
+    any<32> a;
+    static_assert(sizeof(a) == 32 + 8, "any has a fixed overhead of 8 bytes");
 
     a = 1234;
     ASSERT_EQ(1234, a.get<int>());
 
-    a = "foobar";
-    ASSERT_EQ(std::string("foobar"), a.get<const char*>());
+    a = std::string("foobar");
+    ASSERT_EQ("foobar", a.get<std::string>());
 
-    struct A
-    {
-        explicit A(long i = 0, double d = .0)
-         : i_(i), d_(d) {}
+    try {
+      // this will throw it is a string
+      std::cout << any_cast<int>(a);
+    }
+    catch(bad_any_cast& ex) {
+    }
 
-        long i_;
-        double d_;
-    };
+    struct A : std::array<char, 32> {};
+    a = A();
 
-    a = A(12, .34);
-
-    struct B : A { long j_; };  
+    struct B : A { char c; };  
     
     // Does not build: sizeof(B) is too big for any<16>
     a = B();
@@ -40,39 +41,20 @@ Example
 
 ---
 
-Comparison with Boost.Any
--------------------------
+any\_t<S>
+=========
+A container similar to any<S>, but for trivially copyable types only. The differences:
 
-### Advantages
- - **~50x faster** than Boost.Any, as there is no memory allocation or any other overhead around the data
- - **Cache-friendly**: Any.Trivial is stack-based, close to the other class attributes
- - **No space overhead**: 100% of the data space is useful
+ - No space overhead at all
+ - Unsafe: there is no check when you try to access your data
+ - Faster, as it eliminates few branches and assignments around type safety
 
-Thus, the following code:
-```c++
-void foo(any<16>& a)
-{
-    a = 1234;
-}
+On my laptop with a i7-3537U CPU, I got the following results when benchmarking during one second the assignment of a double to boost.any, any<S> and any\_t<S>:
+
 ```
-
-... is translated to:
+Test              Time (ns)
+---------------------------
+boost.any               50
+any<16>                  4
+any_t<16>                0
 ```
-Dump of assembler code for function foo(any<16ul, void>&):
-   0x0000000000431c50 <+0>:     mov    DWORD PTR [rdi],0x4d2
-   0x0000000000431c56 <+6>:     ret
-End of assembler dump.
-```
-
-### Drawbacks
- - **Safety**: Boost.Any stores the type and will throw an exception if you try to get a wrong type
- - **Type support**: Any.Trivial only supports trivially copyable types
-
-
----
-
-Roadmap
--------
-
-### 0.1
-- Type safety: typeid() of the stored type will be saved and checked when accessing the object
