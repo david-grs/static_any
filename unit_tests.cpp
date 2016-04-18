@@ -11,8 +11,8 @@ struct A
 
 TEST(any, readme_example)
 {
-    any<16> a;
-    static_assert(sizeof(a) == 16 + sizeof(std::ptrdiff_t), "impossible");
+    any<32> a; // on g++ 5.x sizeof(std::string) is 32
+    static_assert(sizeof(a) == 32 + sizeof(std::ptrdiff_t), "impossible");
 
     a = 1234;
     ASSERT_EQ(1234, a.get<int>());
@@ -259,3 +259,44 @@ TEST(any, any_to_bigger_any_copy)
     any<32> b = a;
     ASSERT_EQ(1, b.get<int>());
 }
+
+struct InitCtor
+{
+    int x = 1;
+    int y = 2;
+    InitCtor() = default;
+    InitCtor(int x, int y) : x(x), y(y) {}
+};
+
+TEST(any, emplace_no_params)
+{
+    any<32> a;
+    a.emplace<InitCtor>();
+
+    ASSERT_FALSE(a.empty());
+    EXPECT_EQ(1, a.get<InitCtor>().x);
+    EXPECT_EQ(2, a.get<InitCtor>().y);
+}
+
+TEST(any, emplace_params)
+{
+    any<32> a;
+    a.emplace<InitCtor>(77, 88);
+
+    ASSERT_FALSE(a.empty());
+    EXPECT_EQ(77, a.get<InitCtor>().x);
+    EXPECT_EQ(88, a.get<InitCtor>().y);
+}
+
+TEST(any, destroyed_after_emplace)
+{
+    CallCounter::reset_counters();
+    {
+        any<32> a;
+        a.emplace<CallCounter>();
+    }
+
+    EXPECT_EQ(1, CallCounter::default_constructions);
+    EXPECT_EQ(1, CallCounter::destructions);
+}
+
