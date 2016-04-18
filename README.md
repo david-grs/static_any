@@ -51,7 +51,7 @@ A container similar to any\<S\>, but for trivially copyable types only. The diff
  - **Faster**
  - **Unsafe**: there is no check when you try to access your data
 
-On my laptop with a i7-3537U CPU, I got the following results when benchmarking during one second the assignment of a double to boost.any, any<S> and any\_t<S>:
+On my laptop with a i7-3537U CPU, I got the following results when benchmarking during one second the assignment of a double to boost.any, any\<S\> and any\_t\<S\>:
 
 ```
 Test              Time (ns)
