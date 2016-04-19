@@ -200,6 +200,18 @@ TEST(any, get_bad_type)
     EXPECT_THROW(a.get<double>(), std::bad_cast);
 }
 
+TEST(any, get_empty)
+{
+    static_any<16> a;
+    EXPECT_THROW(a.get<double>(), std::bad_cast);
+}
+
+TEST(any, cast_empty)
+{
+    static_any<16> a;
+    EXPECT_THROW(any_cast<int>(a), std::bad_cast);
+}
+
 TEST(any, mutable_get)
 {
     static_any<16> a(7);
@@ -411,4 +423,5 @@ TEST(any_t, simple)
     static_any_t<16> a(7);
     ASSERT_EQ(7, a.get<int>());
 }
+
 

@@ -182,7 +182,10 @@ struct static_any
 
     const std::type_info& type() const
     {
-        return function_(operation_t::query_type, const_cast<static_any*>(this), nullptr);
+        if (empty())
+            return typeid(void);
+        else
+            return function_(operation_t::query_type, const_cast<static_any*>(this), nullptr);
     }
 
     bool empty() const { return function_ == nullptr; }
