@@ -14,5 +14,3 @@ add_library(dyn_lib SHARED
 add_executable(tests any.hpp unit_tests.cpp)
 target_link_libraries(tests dyn_lib ${GTEST_BOTH_LIBRARIES} pthread)
 
-#add_executable(example example.cpp)
-#target_link_libraries(example papi)

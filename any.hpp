@@ -193,12 +193,15 @@ struct static_any
 
     const std::type_info& type() const
     {
-        return function_(operation_t::query_type, const_cast<static_any*>(this), nullptr);
+        if (empty())
+            return typeid(void);
+        else
+            return function_(operation_t::query_type, const_cast<static_any*>(this), nullptr);
     }
 
     bool empty() const { return function_ == nullptr; }
 
-    static constexpr size_type size() { return _N; }
+    static constexpr size_type capacity() { return _N; }
 
     // Initializes with object of type T, created in-place with specified constructor params
     template<typename _T, typename... Args>
@@ -216,7 +219,7 @@ private:
     template <typename _T>
     void copy_or_move(_T&& t)
     {
-        static_assert(size() >= sizeof(_T), "_T is too big to be copied to static_any");
+        static_assert(capacity() >= sizeof(_T), "_T is too big to be copied to static_any");
         assert(function_ == nullptr);
 
         function_ = detail::static_any::get_function_for_type<_T>();
@@ -368,7 +371,7 @@ struct static_any_t
 {
     typedef std::size_t size_type;
 
-    static constexpr size_type size() { return _N; }
+    static constexpr size_type capacity() { return _N; }
 
     static_any_t() = default;
     static_any_t(const static_any_t&) = default;
@@ -397,7 +400,7 @@ private:
     void copy(_ValueT&& t)
     {
         static_assert(std::is_trivially_copyable<_ValueT>::value, "_ValueT is not trivially copyable");
-        static_assert(size() >= sizeof(_ValueT), "_ValueT is too big to be copied to static_any");
+        static_assert(capacity() >= sizeof(_ValueT), "_ValueT is too big to be copied to static_any");
 
         std::memcpy(buff_.data(), (char*)&t, sizeof(_ValueT));
     }

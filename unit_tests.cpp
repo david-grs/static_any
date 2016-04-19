@@ -40,6 +40,18 @@ TEST(any, size)
     ASSERT_EQ(16 + sizeof(std::ptrdiff_t), sizeof(a));
 }
 
+TEST(any, capacity)
+{
+    static_any<32> a;
+    ASSERT_EQ(32, a.capacity());
+
+    a = std::string("hello world");
+    ASSERT_EQ(32, a.capacity());
+
+    a.reset();
+    ASSERT_EQ(32, a.capacity());
+}
+
 struct CallCounter
 {
     CallCounter() { default_constructions++; }
@@ -200,6 +212,18 @@ TEST(any, get_bad_type)
 {
     static_any<16> a(7);
     EXPECT_THROW(a.get<double>(), std::bad_cast);
+}
+
+TEST(any, get_empty)
+{
+    static_any<16> a;
+    EXPECT_THROW(a.get<double>(), std::bad_cast);
+}
+
+TEST(any, cast_empty)
+{
+    static_any<16> a;
+    EXPECT_THROW(any_cast<int>(a), std::bad_cast);
 }
 
 TEST(any, mutable_get)
