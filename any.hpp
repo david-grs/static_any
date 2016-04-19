@@ -166,6 +166,8 @@ struct static_any
         return *this;
     }
 
+    inline void reset() { destroy(); }
+
     template<typename _T>
     inline const _T& get() const;
 

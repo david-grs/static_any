@@ -118,6 +118,17 @@ TEST(any, destruction)
     ASSERT_EQ(1, CallCounter::destructions);
 }
 
+TEST(any, reset_destruction)
+{
+    CallCounter::reset_counters();
+    CallCounter counter;
+
+    static_any<16> a(counter);
+    a.reset();
+
+    ASSERT_EQ(1, CallCounter::destructions);
+}
+
 TEST(any, copy_assignment)
 {
     CallCounter::reset_counters();
@@ -377,6 +388,22 @@ TEST(any, query_type)
 
     a = std::string("f00");
     ASSERT_EQ(typeid(std::string), a.type());
+}
+
+TEST(any, reset_empty)
+{
+    static_any<16> a(7);
+    ASSERT_FALSE(a.empty());
+    a.reset();
+    ASSERT_TRUE(a.empty());
+}
+
+TEST(any, reset_has)
+{
+    static_any<16> a(7);
+    ASSERT_TRUE(a.has<int>());
+    a.reset();
+    ASSERT_FALSE(a.has<int>());
 }
 
 TEST(any_t, simple)
