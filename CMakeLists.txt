@@ -8,6 +8,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
-add_executable(tests any.hpp unit_tests.cpp)
-target_link_libraries(tests ${GTEST_BOTH_LIBRARIES} pthread)
+add_library(dyn_lib SHARED dyn_lib.cpp dyn_lib.hpp)
 
+add_executable(tests any.hpp unit_tests.cpp)
+target_link_libraries(tests dyn_lib ${GTEST_BOTH_LIBRARIES} pthread)
