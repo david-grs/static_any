@@ -1,5 +1,7 @@
 #include "any.hpp"
 
+#include "dyn_lib.hpp"
+
 #include <gtest/gtest.h>
 
 struct A
@@ -430,10 +432,19 @@ TEST(any, reset_has)
     ASSERT_FALSE(a.has<int>());
 }
 
+TEST(any, type_identification_across_dll)
+{
+    auto a = get_any_with_int(7);
+    EXPECT_TRUE(a.has<int>());
+    EXPECT_FALSE(a.has<std::string>());
+
+    EXPECT_EQ(7, a.get<int>());
+
+    EXPECT_THROW(a.get<std::string>(), bad_any_cast);
+}
+
 TEST(any_t, simple)
 {
     static_any_t<16> a(7);
     ASSERT_EQ(7, a.get<int>());
 }
-
-
