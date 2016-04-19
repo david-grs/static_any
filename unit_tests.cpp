@@ -34,7 +34,7 @@ TEST(any, readme_example)
     a = A(12, .34);
 }
 
-TEST(any, size)
+TEST(any, test_sizeof)
 {
     static_any<16> a;
     ASSERT_EQ(16 + sizeof(std::ptrdiff_t), sizeof(a));
@@ -50,6 +50,21 @@ TEST(any, capacity)
 
     a.reset();
     ASSERT_EQ(32, a.capacity());
+}
+
+TEST(any, size)
+{
+    static_any<32> a;
+    ASSERT_EQ(0, a.size());
+
+    a = 1234;
+    ASSERT_EQ(sizeof(1234), a.size());
+
+    a = std::string("foobar");
+    ASSERT_EQ(sizeof(std::string), a.size());
+
+    a.reset();
+    ASSERT_EQ(0, a.size());
 }
 
 struct CallCounter

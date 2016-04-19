@@ -13,7 +13,7 @@
 namespace detail { namespace static_any {
 
 // Pointer to administrative function, function that will by type-specific, and will be able to perform all the required operations
-enum class operation_t { query_type, copy, move, destroy };
+enum class operation_t { query_type, query_size, copy, move, destroy };
 
 using function_ptr_t = void(*)(operation_t operation, void* this_ptr, void*& other_ptr);
 
@@ -27,7 +27,12 @@ static void operation(operation_t operation, void* this_void_ptr, void*& other_v
         case operation_t::query_type:
         {
             const std::type_info& ti = typeid(_T);
-            other_void_ptr =  reinterpret_cast<void*>(const_cast<std::type_info*>(&ti));
+            other_void_ptr = reinterpret_cast<void*>(const_cast<std::type_info*>(&ti));
+            break;
+        }
+        case operation_t::query_size:
+        {
+            other_void_ptr = reinterpret_cast<void*>(sizeof(_T));
             break;
         }
         case operation_t::copy:
@@ -206,6 +211,14 @@ struct static_any
 
     bool empty() const { return function_ == nullptr; }
 
+    size_type size() const
+    {
+        if (empty())
+            return 0;
+        else
+            return query_size();
+    }
+
     static constexpr size_type capacity() { return _N; }
 
     // Initializes with object of type T, created in-place with specified constructor params
@@ -251,12 +264,26 @@ private:
 
     const std::type_info& query_type() const
     {
+        assert(function_ != nullptr);
+
         void* p = nullptr;
         function_(operation_t::query_type, nullptr, p);
 
         assert(p != nullptr);
         const std::type_info* ti = reinterpret_cast<const std::type_info*>(p);
         return *ti;
+    }
+
+    size_type query_size() const
+    {
+        assert(function_ != nullptr);
+
+        void* p = nullptr;
+        function_(operation_t::query_size, nullptr, p);
+
+        assert(p != nullptr);
+        size_type size = reinterpret_cast<size_type>(p);
+        return size;
     }
 
     void destroy()
