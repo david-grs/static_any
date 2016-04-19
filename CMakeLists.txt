@@ -12,3 +12,7 @@ add_library(dyn_lib SHARED dyn_lib.cpp dyn_lib.hpp)
 
 add_executable(tests any.hpp unit_tests.cpp)
 target_link_libraries(tests dyn_lib ${GTEST_BOTH_LIBRARIES} pthread)
+
+find_package(Qt4 REQUIRED)
+add_executable(benchmark benchmark.cpp)
+target_link_libraries(benchmark papi Qt4::QtCore)
