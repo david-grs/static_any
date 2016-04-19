@@ -38,6 +38,18 @@ TEST(any, size)
     ASSERT_EQ(16 + sizeof(std::ptrdiff_t), sizeof(a));
 }
 
+TEST(any, capacity)
+{
+    static_any<32> a;
+    ASSERT_EQ(32, a.capacity());
+
+    a = std::string("hello world");
+    ASSERT_EQ(32, a.capacity());
+
+    a.reset();
+    ASSERT_EQ(32, a.capacity());
+}
+
 struct CallCounter
 {
     CallCounter() { default_constructions++; }
