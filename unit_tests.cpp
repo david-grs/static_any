@@ -76,11 +76,11 @@ TEST(any, contructed_with_param_non_empty)
     ASSERT_FALSE(a.empty());
 }
 
-TEST(any, is_stored_type)
+TEST(any, has)
 {
     static_any<16> a(77); // will contain integer
-    ASSERT_TRUE(a.is_stored_type<int>());
-    ASSERT_FALSE(a.is_stored_type<double>());
+    ASSERT_TRUE(a.has<int>());
+    ASSERT_FALSE(a.has<double>());
 }
 
 TEST(any, move_construct)
@@ -169,11 +169,11 @@ TEST(any, not_empty_after_assignment)
 TEST(any, different_type_after_assignment)
 {
     static_any<16> a(7);
-    ASSERT_TRUE(a.is_stored_type<int>());
-    ASSERT_FALSE(a.is_stored_type<double>());
+    ASSERT_TRUE(a.has<int>());
+    ASSERT_FALSE(a.has<double>());
     a = 3.14;
-    ASSERT_FALSE(a.is_stored_type<int>());
-    ASSERT_TRUE(a.is_stored_type<double>());
+    ASSERT_FALSE(a.has<int>());
+    ASSERT_TRUE(a.has<double>());
 }
 
 TEST(any, get_good_type)

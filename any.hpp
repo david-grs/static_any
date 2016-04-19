@@ -173,7 +173,7 @@ struct static_any
     inline _T& get();
 
     template <typename _T>
-    bool is_stored_type() const
+    bool has() const
     {
         return function_ == detail::static_any::get_function_for_type<_T>();
     }
@@ -306,7 +306,7 @@ template <typename _ValueT,
           std::size_t _S>
 inline _ValueT* any_cast(static_any<_S>* a)
 {
-    if (!a->template is_stored_type<_ValueT>())
+    if (!a->template has<_ValueT>())
         return nullptr;
 
     return a->template as<_ValueT>();
@@ -323,7 +323,7 @@ template <typename _ValueT,
           std::size_t _S>
 inline _ValueT& any_cast(static_any<_S>& a)
 {
-    if (!a.template is_stored_type<_ValueT>())
+    if (!a.template has<_ValueT>())
         throw bad_any_cast(a.type(), typeid(_ValueT));
 
     return *a.template as<_ValueT>();
