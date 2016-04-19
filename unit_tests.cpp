@@ -383,7 +383,7 @@ TEST(any, any_cast_reference_wrong_type_from_to)
 
 TEST(any, query_type)
 {
-    static_any<16> a(7);
+    static_any<32> a(7);
     ASSERT_EQ(typeid(int), a.type());
 
     a = std::string("f00");
