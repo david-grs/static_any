@@ -14,38 +14,43 @@ namespace detail { namespace static_any {
 
 // Pointer to administrative function, function that will by type-specific, and will be able to perform all the required operations
 enum class operation_t { query_type, copy, move, destroy };
-using function_ptr_t = const std::type_info&(*)(operation_t operation, void* this_ptr, void* other_ptr);
+
+using function_ptr_t = void(*)(operation_t operation, void* this_ptr, void*& other_ptr);
 
 template<typename _T>
-static const std::type_info& operation(operation_t operation, void* this_void_ptr, void* other_void_ptr)
+static void operation(operation_t operation, void* this_void_ptr, void*& other_void_ptr)
 {
     _T* this_ptr = reinterpret_cast<_T*>(this_void_ptr);
-    _T* other_ptr = reinterpret_cast<_T*>(other_void_ptr);
 
     switch(operation)
     {
         case operation_t::query_type:
+        {
+            const std::type_info& ti = typeid(_T);
+            other_void_ptr =  reinterpret_cast<void*>(const_cast<std::type_info*>(&ti));
             break;
-
+        }
         case operation_t::copy:
+        {
+            _T* other_ptr = reinterpret_cast<_T*>(other_void_ptr);
             assert(this_ptr);
             assert(other_ptr);
             new(this_ptr)_T(*other_ptr);
             break;
-
+        }
         case operation_t::move:
+        {    _T* other_ptr = reinterpret_cast<_T*>(other_void_ptr);
             assert(this_ptr);
             assert(other_ptr);
             new(this_ptr)_T(std::move(*other_ptr));
             break;
-
+        }
         case operation_t::destroy:
-            assert(this_ptr);
+        {    assert(this_ptr);
             this_ptr->~_T();
             break;
+        }
     }
-
-    return typeid(_T);
 }
 
 template<typename _T>
@@ -186,7 +191,7 @@ struct static_any
         else if (function_)
         {
             // need to try another, possibly more costly way, as we may compare types across DLL boundaries
-            return std::type_index(typeid(_T)) == std::type_index(function_(operation_t::query_type, nullptr, nullptr));
+            return std::type_index(typeid(_T)) == std::type_index(query_type());
         }
         return false;
     }
@@ -196,7 +201,7 @@ struct static_any
         if (empty())
             return typeid(void);
         else
-            return function_(operation_t::query_type, const_cast<static_any*>(this), nullptr);
+            return query_type();
     }
 
     bool empty() const { return function_ == nullptr; }
@@ -227,28 +232,39 @@ private:
         using NonConstT = std::remove_cv_t<std::remove_reference_t<_T>>;
         NonConstT* non_const_t = const_cast<NonConstT*>(&t);
 
-        call_function<_T&&>(buff_.data(), non_const_t);
+        call_copy_or_more<_T&&>(buff_.data(), non_const_t);
     }
 
     template <typename Ref>
     std::enable_if_t<std::is_rvalue_reference<Ref>::value>
-    call_function(void* this_void_ptr, void* other_void_ptr)
+    call_copy_or_more(void* this_void_ptr, void* other_void_ptr)
     {
         function_(operation_t::move, this_void_ptr, other_void_ptr);
     }
 
     template <typename Ref>
     std::enable_if_t<!std::is_rvalue_reference<Ref>::value>
-    call_function(void* this_void_ptr, void* other_void_ptr)
+    call_copy_or_more(void* this_void_ptr, void* other_void_ptr)
     {
         function_(operation_t::copy, this_void_ptr, other_void_ptr);
+    }
+
+    const std::type_info& query_type() const
+    {
+        void* p = nullptr;
+        function_(operation_t::query_type, nullptr, p);
+
+        assert(p != nullptr);
+        const std::type_info* ti = reinterpret_cast<const std::type_info*>(p);
+        return *ti;
     }
 
     void destroy()
     {
         if (function_)
         {
-            function_(operation_t::destroy, buff_.data(), nullptr);
+            void* not_used = nullptr;
+            function_(operation_t::destroy, buff_.data(), not_used);
             function_ = nullptr;
         }
     }
@@ -271,7 +287,8 @@ private:
         if (another.function_)
         {
             function_= another.function_;
-            char* other_data = const_cast<char*>(another.buff_.data());
+
+            void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.buff_.data()));
             function_(operation_t::copy, buff_.data(), other_data);
         }
     }
