@@ -5,6 +5,7 @@
 #include <cstring>
 #include <type_traits>
 #include <typeinfo>
+#include <typeindex>
 #include <cassert>
 #include <sstream>
 #include <string>
@@ -21,24 +22,25 @@ static const std::type_info& operation(operation_t operation, void* this_void_pt
     _T* this_ptr = reinterpret_cast<_T*>(this_void_ptr);
     _T* other_ptr = reinterpret_cast<_T*>(other_void_ptr);
 
-    assert(this_ptr);
-
     switch(operation)
     {
         case operation_t::query_type:
             break;
 
         case operation_t::copy:
+            assert(this_ptr);
             assert(other_ptr);
             new(this_ptr)_T(*other_ptr);
             break;
 
         case operation_t::move:
+            assert(this_ptr);
             assert(other_ptr);
             new(this_ptr)_T(std::move(*other_ptr));
             break;
 
         case operation_t::destroy:
+            assert(this_ptr);
             this_ptr->~_T();
             break;
     }
@@ -177,7 +179,16 @@ struct static_any
     template <typename _T>
     bool has() const
     {
-        return function_ == detail::static_any::get_function_for_type<_T>();
+        if (function_ == detail::static_any::get_function_for_type<_T>())
+        {
+            return true;
+        }
+        else if (function_)
+        {
+            // need to try another, possibly more costly way, as we may compare types across DLL boundaries
+            return std::type_index(typeid(_T)) == std::type_index(function_(operation_t::query_type, nullptr, nullptr));
+        }
+        return false;
     }
 
     const std::type_info& type() const
