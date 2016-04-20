@@ -26,7 +26,7 @@ Example
     ASSERT_EQ("foobar", a.get<std::string>());
 
     try {
-      // this will throw it is a string
+      // This will throw as a std::string has been stored
       std::cout << any_cast<int>(a);
     }
     catch(bad_any_cast& ex) {
@@ -53,13 +53,66 @@ A container similar to static\_any\<S\>, but for trivially copyable types only. 
  - **Unsafe**: there is no check when you try to access your data
 
 
-On my laptop with a i7-3537U CPU, I got the following results when benchmarking during one second the assignment of a double to boost.any, static\_any\<S\> and static\_any\_t\<S\>:
+
+---
+
+Benchmarks
+==========
+As the main advantage of static\_any(\_t\<S\>) is speed, here is a comparison of assign/get operations on a POD/non-POD types &mdash; an integer and a std::string &mdash; between
+boost.any, QVariant, static\_any\<S\> and static\_any\_t\<S\>.
+
+
+**assign an integer**
+```
+Test             Time (ns)
+--------------------------
+qvariant                36
+boost.any               60
+static_any<8>            7
+static_any_t<8>          0
+```
+
+**get an integer**
+```
+Test             Time (ns)
+--------------------------
+qvariant                 7
+boost.any               14
+static_any<8>            4
+static_any_t<8>          1
+```
+
+**assign a string**
+```
+Test             Time (ns)
+--------------------------
+qvariant               400
+boost.any              143
+static_any<32>          98
+```
+
+**get a string**
+```
+Test             Time (ns)
+--------------------------
+qvariant                31
+boost.any               64
+static_any<32>           4
+```
+
+What I used for this benchmark:
+ - Boost 1.54
+ - Qt5
+ - GCC 5.3.0
+ - CPU i7-3537U
+
+The code is available in *benchmark.cpp*. There is a dependency on *geiger*, a benchmarking library I developed. In order to build and run the benchmark, first install geiger:
 
 ```
-Test              Time (ns)
----------------------------
-boost.any               50
-static_any<16>           4
-static_any_t<16>         0
+git clone https://github.com/david-grs/geiger
+cd geiger && mkdir build && cd build
+cmake .. && make install
 ```
+
+Then pass *-DBUILD_BENCHMARK=1* to your cmake command.
 
