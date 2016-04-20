@@ -26,7 +26,7 @@ Example
     ASSERT_EQ("foobar", a.get<std::string>());
 
     try {
-      // this will throw it is a string
+      // This will throw as a std::string has been stored
       std::cout << any_cast<int>(a);
     }
     catch(bad_any_cast& ex) {
