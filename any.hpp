@@ -15,36 +15,35 @@ namespace detail { namespace static_any {
 // Pointer to administrative function, function that will by type-specific, and will be able to perform all the required operations
 enum class operation_t { query_type, query_size, copy, move, destroy };
 
-using function_ptr_t = void(*)(operation_t operation, void* this_ptr, void*& other_ptr);
+using function_ptr_t = void(*)(operation_t operation, void* this_ptr, void* other_ptr);
 
 template<typename _T>
-static void operation(operation_t operation, void* this_void_ptr, void*& other_void_ptr)
+static void operation(operation_t operation, void* ptr1, void* ptr2)
 {
-    _T* this_ptr = reinterpret_cast<_T*>(this_void_ptr);
+    _T* this_ptr = reinterpret_cast<_T*>(ptr1);
 
     switch(operation)
     {
         case operation_t::query_type:
         {
-            const std::type_info& ti = typeid(_T);
-            other_void_ptr = reinterpret_cast<void*>(const_cast<std::type_info*>(&ti));
+            *reinterpret_cast<const std::type_info**>(ptr1) = &typeid(_T);
             break;
         }
         case operation_t::query_size:
         {
-            other_void_ptr = reinterpret_cast<void*>(sizeof(_T));
+            *reinterpret_cast<std::size_t*>(ptr1) = sizeof(_T);
             break;
         }
         case operation_t::copy:
         {
-            _T* other_ptr = reinterpret_cast<_T*>(other_void_ptr);
+            _T* other_ptr = reinterpret_cast<_T*>(ptr2);
             assert(this_ptr);
             assert(other_ptr);
             new(this_ptr)_T(*other_ptr);
             break;
         }
         case operation_t::move:
-        {    _T* other_ptr = reinterpret_cast<_T*>(other_void_ptr);
+        {    _T* other_ptr = reinterpret_cast<_T*>(ptr2);
             assert(this_ptr);
             assert(other_ptr);
             new(this_ptr)_T(std::move(*other_ptr));
@@ -265,24 +264,16 @@ private:
     const std::type_info& query_type() const
     {
         assert(function_ != nullptr);
-
-        void* p = nullptr;
-        function_(operation_t::query_type, nullptr, p);
-
-        assert(p != nullptr);
-        const std::type_info* ti = reinterpret_cast<const std::type_info*>(p);
+        const std::type_info* ti ;
+        function_(operation_t::query_type, &ti, nullptr);
         return *ti;
     }
 
     size_type query_size() const
     {
         assert(function_ != nullptr);
-
-        void* p = nullptr;
-        function_(operation_t::query_size, nullptr, p);
-
-        assert(p != nullptr);
-        size_type size = reinterpret_cast<size_type>(p);
+        std::size_t size;
+        function_(operation_t::query_size, &size, nullptr);
         return size;
     }
 
@@ -410,6 +401,7 @@ _T& static_any<_S>::get()
     return any_cast<_T>(*this);
 }
 
+
 template <std::size_t _N>
 struct static_any_t
 {
@@ -443,7 +435,9 @@ private:
     template <typename _ValueT>
     void copy(_ValueT&& t)
     {
+#if __GNUC__ >= 5
         static_assert(std::is_trivially_copyable<_ValueT>::value, "_ValueT is not trivially copyable");
+#endif
         static_assert(capacity() >= sizeof(_ValueT), "_ValueT is too big to be copied to static_any");
 
         std::memcpy(buff_.data(), (char*)&t, sizeof(_ValueT));
