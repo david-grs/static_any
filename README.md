@@ -100,9 +100,19 @@ boost.any               64
 static_any<32>           4
 ```
 
-
-Details around the benchmark:
+What I used for this benchmark:
  - Boost 1.54
  - Qt5
  - GCC 5.3.0
  - CPU i7-3537U
+
+The code is available in *benchmark.cpp*. There is a dependency on *geiger*, a benchmarking library I developed. In order to build and run the benchmark, first install geiger:
+
+```
+git clone https://github.com/david-grs/geiger
+cd geiger && mkdir build && cd build
+cmake .. && make install
+```
+
+Then pass *-DBUILD_BENCHMARK=1* to your cmake command.
+
