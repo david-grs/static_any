@@ -463,3 +463,18 @@ TEST(any_t, simple)
     static_any_t<16> a(7);
     ASSERT_EQ(7, a.get<int>());
 }
+
+struct Unsafe
+{
+    Unsafe() =default;
+    Unsafe(const Unsafe&) { throw 123; }
+};
+
+TEST(any_exception, move)
+{
+    static_any<16> a;
+
+    EXPECT_THROW(a = Unsafe(), int);
+    EXPECT_TRUE(a.empty());
+}
+
