@@ -244,7 +244,13 @@ private:
         using NonConstT = std::remove_cv_t<std::remove_reference_t<_T>>;
         NonConstT* non_const_t = const_cast<NonConstT*>(&t);
 
-        call_copy_or_more<_T&&>(buff_.data(), non_const_t);
+        try {
+            call_copy_or_more<_T&&>(buff_.data(), non_const_t);
+        }
+        catch(...) {
+            function_ = nullptr;
+            throw;
+        }
     }
 
     template <typename Ref>
@@ -307,7 +313,14 @@ private:
             function_= another.function_;
 
             void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.buff_.data()));
-            function_(operation_t::copy, buff_.data(), other_data);
+
+            try {
+                function_(operation_t::copy, buff_.data(), other_data);
+            }
+            catch(...) {
+                function_ = nullptr;
+                throw;
+            }
         }
     }
 
