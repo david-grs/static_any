@@ -492,3 +492,15 @@ TEST(any_exception, copy)
     EXPECT_TRUE(a.empty());
 }
 
+struct unsafe_to_construct
+{
+    unsafe_to_construct() { throw 123; };
+};
+
+TEST(any_exception, emplace)
+{
+    static_any<16> a;
+    EXPECT_THROW(a.emplace<unsafe_to_construct>(), int);
+    EXPECT_TRUE(a.empty());
+}
+
