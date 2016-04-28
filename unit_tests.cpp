@@ -464,17 +464,31 @@ TEST(any_t, simple)
     ASSERT_EQ(7, a.get<int>());
 }
 
-struct Unsafe
+struct unsafe_to_copy
 {
-    Unsafe() =default;
-    Unsafe(const Unsafe&) { throw 123; }
+    unsafe_to_copy() =default;
+    unsafe_to_copy(const unsafe_to_copy&) { throw 123; }
 };
+
+TEST(any_exception, init)
+{
+    EXPECT_THROW(static_any<16> a = unsafe_to_copy(), int);
+}
 
 TEST(any_exception, move)
 {
     static_any<16> a;
 
-    EXPECT_THROW(a = Unsafe(), int);
+    EXPECT_THROW(a = unsafe_to_copy(), int);
+    EXPECT_TRUE(a.empty());
+}
+
+TEST(any_exception, copy)
+{
+    static_any<16> a;
+    unsafe_to_copy u;
+
+    EXPECT_THROW(a = u, int);
     EXPECT_TRUE(a.empty());
 }
 
