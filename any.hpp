@@ -118,46 +118,40 @@ struct static_any
 
     static_any& operator=(const static_any& another)
     {
-        destroy();
-        copy_from_another(another);
+        assign_from_another(another);
         return *this;
     }
 
     static_any& operator=(static_any& another)
     {
-        destroy();
-        copy_from_another(another);
+        assign_from_another(another);
         return *this;
     }
 
     static_any& operator=(static_any&& another)
     {
-        destroy();
-        copy_from_another(another);
+        assign_from_another(another);
         return *this;
     }
 
     template<std::size_t _M>
     static_any& operator=(const static_any<_M>& another)
     {
-        destroy();
-        copy_from_another(another);
+        assign_from_another(another);
         return *this;
     }
 
     template<std::size_t _M>
     static_any& operator=(static_any<_M>& another)
     {
-        destroy();
-        copy_from_another(another);
+        assign_from_another(another);
         return *this;
     }
 
     template<std::size_t _M>
     static_any& operator=(static_any<_M>&& another)
     {
-        destroy();
-        copy_from_another(another);
+        assign_from_another(another);
         return *this;
     }
 
@@ -328,20 +322,43 @@ private:
     template<std::size_t _M>
     void copy_from_another(const static_any<_M>& another)
     {
-        if (another.function_)
-        {
-            function_= another.function_;
+        assert(function_ == nullptr);
 
-            void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.buff_.data()));
+        if (another.function_ == nullptr)
+            return;
 
-            try {
-                function_(operation_t::copy, buff_.data(), other_data);
-            }
-            catch(...) {
-                function_ = nullptr;
-                throw;
-            }
+        void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.buff_.data()));
+
+        try {
+            another.function_(operation_t::copy, buff_.data(), other_data);
         }
+        catch(...) {
+            throw;
+        }
+
+        function_= another.function_;
+    }
+
+    template<std::size_t _M>
+    void assign_from_another(const static_any<_M>& another)
+    {
+        if (another.function_ == nullptr)
+            return;
+
+        void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.buff_.data()));
+        std::array<char, _N> buff;
+
+        try {
+            another.function_(operation_t::copy, buff.data(), other_data);
+        }
+        catch(...) {
+            throw;
+        }
+
+        destroy();
+
+        function_= another.function_;
+        buff_ = buff;
     }
 
     std::array<char, _N> buff_;

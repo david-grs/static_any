@@ -515,3 +515,39 @@ TEST(any_exception, emplace)
     EXPECT_TRUE(a.empty());
 }
 
+TEST(any_exception, copy_from_any)
+{
+    static_any<16> a;
+    a.emplace<unsafe_to_copy>();
+
+    static_any<16> b(1234);
+    EXPECT_THROW(b = a, int);
+
+    EXPECT_FALSE(b.empty());
+    EXPECT_EQ(1234, b.get<int>());
+    EXPECT_EQ(typeid(int), b.type());
+}
+
+TEST(any_exception, move_from_any)
+{
+    static_any<16> a;
+    a.emplace<unsafe_to_copy>();
+
+    static_any<16> b(1234);
+    EXPECT_THROW(b = std::move(a), int);
+
+    EXPECT_EQ(1234, b.get<int>());
+}
+
+TEST(any_exception, move_from_different_any)
+{
+    static_any<8> a;
+    a.emplace<unsafe_to_copy>();
+
+    static_any<16> b(1234);
+    EXPECT_THROW(b = std::move(a), int);
+
+    EXPECT_EQ(1234, b.get<int>());
+}
+
+
