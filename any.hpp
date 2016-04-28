@@ -164,16 +164,14 @@ struct static_any
     template <typename _T>
     static_any& operator=(const _T& t)
     {
-        destroy();
-        copy_or_move(std::forward<_T>(t));
+        assign(std::forward<_T>(t));
         return *this;
     }
 
     template <typename _T>
     static_any& operator=(_T&& t)
     {
-        destroy();
-        copy_or_move(std::forward<_T>(t));
+        assign(std::forward<_T>(t));
         return *this;
     }
 
@@ -239,32 +237,54 @@ private:
         static_assert(capacity() >= sizeof(_T), "_T is too big to be copied to static_any");
         assert(function_ == nullptr);
 
-        function_ = detail::static_any::get_function_for_type<_T>();
-
         using NonConstT = std::remove_cv_t<std::remove_reference_t<_T>>;
         NonConstT* non_const_t = const_cast<NonConstT*>(&t);
 
         try {
-            call_copy_or_more<_T&&>(buff_.data(), non_const_t);
+            call_copy_or_move<_T&&>(buff_.data(), non_const_t);
         }
         catch(...) {
-            function_ = nullptr;
             throw;
         }
+
+        function_ = detail::static_any::get_function_for_type<_T>();
     }
 
-    template <typename Ref>
-    std::enable_if_t<std::is_rvalue_reference<Ref>::value>
-    call_copy_or_more(void* this_void_ptr, void* other_void_ptr)
+    template <typename _T>
+    void assign(_T&& t)
     {
-        function_(operation_t::move, this_void_ptr, other_void_ptr);
+        static_assert(capacity() >= sizeof(_T), "_T is too big to be copied to static_any");
+
+        using NonConstT = std::remove_cv_t<std::remove_reference_t<_T>>;
+        NonConstT* non_const_t = const_cast<NonConstT*>(&t);
+
+        std::array<char, _N> buff;
+
+        try {
+            call_copy_or_move<_T&&>(buff.data(), non_const_t);
+        }
+        catch(...) {
+            throw;
+        }
+
+        destroy();
+
+        function_ = detail::static_any::get_function_for_type<_T>();
+        buff_ = buff;
     }
 
-    template <typename Ref>
-    std::enable_if_t<!std::is_rvalue_reference<Ref>::value>
-    call_copy_or_more(void* this_void_ptr, void* other_void_ptr)
+    template <typename _RefT>
+    std::enable_if_t<std::is_rvalue_reference<_RefT>::value>
+    call_copy_or_move(void* this_void_ptr, void* other_void_ptr)
     {
-        function_(operation_t::copy, this_void_ptr, other_void_ptr);
+        detail::static_any::get_function_for_type<_RefT>()(operation_t::move, this_void_ptr, other_void_ptr);
+    }
+
+    template <typename _RefT>
+    std::enable_if_t<!std::is_rvalue_reference<_RefT>::value>
+    call_copy_or_move(void* this_void_ptr, void* other_void_ptr)
+    {
+        detail::static_any::get_function_for_type<_RefT>()(operation_t::copy, this_void_ptr, other_void_ptr);
     }
 
     const std::type_info& query_type() const

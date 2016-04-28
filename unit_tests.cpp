@@ -492,6 +492,17 @@ TEST(any_exception, copy)
     EXPECT_TRUE(a.empty());
 }
 
+TEST(any_exception, restore_when_failed)
+{
+    static_any<16> a(1234);
+
+    EXPECT_THROW(a = unsafe_to_copy(), int);
+
+    EXPECT_FALSE(a.empty());
+    EXPECT_EQ(1234, a.get<int>());
+    EXPECT_EQ(typeid(int), a.type());
+}
+
 struct unsafe_to_construct
 {
     unsafe_to_construct() { throw 123; };
