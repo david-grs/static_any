@@ -262,6 +262,7 @@ private:
         }
 
         destroy();
+        assert(function_ == nullptr);
 
         function_ = detail::static_any::get_function_for_type<_T>();
         buff_ = buff;
