@@ -320,7 +320,8 @@ private:
         return reinterpret_cast<_T*>(buff_.data());
     }
 
-    template<std::size_t _M>
+    template<std::size_t _M,
+             typename _X=std::enable_if_t<_M <= _N>>
     void copy_from_another(const static_any<_M>& another)
     {
         assert(function_ == nullptr);
@@ -340,7 +341,8 @@ private:
         function_= another.function_;
     }
 
-    template<std::size_t _M>
+    template<std::size_t _M,
+             typename _X=std::enable_if_t<_M <= _N>>
     void assign_from_another(const static_any<_M>& another)
     {
         if (another.function_ == nullptr)
