@@ -83,21 +83,6 @@ struct static_any
         copy_or_move(std::forward<_T>(v));
     }
 
-    static_any(const static_any& another)
-    {
-        copy_or_move_from_another(std::forward<static_any>(another));
-    }
-
-    static_any(static_any& another)
-    {
-        copy_or_move_from_another(std::forward<static_any>(another));
-    }
-
-    static_any(static_any&& another)
-    {
-        copy_or_move_from_another(std::forward<static_any>(another));
-    }
-
     template<std::size_t _M>
     static_any(const static_any<_M>& another)
     {
