@@ -184,6 +184,35 @@ TEST(any, move_assignment)
     ASSERT_EQ(1, CallCounter::move_constructions);
 }
 
+TEST(any, any_move_ctor)
+{
+    CallCounter counter;
+    static_any<16> a(counter);
+
+    CallCounter::reset_counters();
+
+    static_any<16> b(std::move(a));
+
+    ASSERT_EQ(0, CallCounter::default_constructions);
+    ASSERT_EQ(0, CallCounter::copy_constructions);
+    ASSERT_EQ(1, CallCounter::move_constructions);
+}
+/*
+TEST(any, any_move_assignment)
+{
+    CallCounter counter;
+    static_any<16> a(counter);
+
+    CallCounter::reset_counters();
+
+    static_any<16> b = 123;
+    b = std::move(a);
+
+    ASSERT_EQ(0, CallCounter::default_constructions);
+    ASSERT_EQ(0, CallCounter::copy_constructions);
+    ASSERT_EQ(1, CallCounter::move_constructions);
+}
+*/
 TEST(any, reassignment)
 {
     CallCounter::reset_counters();

@@ -85,35 +85,35 @@ struct static_any
 
     static_any(const static_any& another)
     {
-        copy_from_another(another);
+        copy_or_move_from_another(std::forward<static_any>(another));
     }
 
     static_any(static_any& another)
     {
-        copy_from_another(another);
+        copy_or_move_from_another(std::forward<static_any>(another));
     }
 
     static_any(static_any&& another)
     {
-        copy_from_another(another);
+        copy_or_move_from_another(std::forward<static_any>(another));
     }
 
     template<std::size_t _M>
     static_any(const static_any<_M>& another)
     {
-        copy_from_another(another);
+        copy_or_move_from_another(std::forward<static_any<_M>>(another));
     }
 
     template<std::size_t _M>
     static_any(static_any<_M>& another)
     {
-        copy_from_another(another);
+        copy_or_move_from_another(std::forward<static_any<_M>>(another));
     }
 
     template<std::size_t _M>
     static_any(static_any<_M>&& another)
     {
-        copy_from_another(another);
+        copy_or_move_from_another(std::forward<static_any<_M>>(another));
     }
 
     static_any& operator=(const static_any& another)
@@ -320,9 +320,23 @@ private:
         return reinterpret_cast<_T*>(buff_.data());
     }
 
+    template <typename _RefT>
+    std::enable_if_t<std::is_rvalue_reference<_RefT>::value>
+    call_copy_or_move(const function_ptr_t& function, void* this_void_ptr, void* other_void_ptr)
+    {
+        function(operation_t::move, this_void_ptr, other_void_ptr);
+    }
+
+    template <typename _RefT>
+    std::enable_if_t<!std::is_rvalue_reference<_RefT>::value>
+    call_copy_or_move(const function_ptr_t& function, void* this_void_ptr, void* other_void_ptr)
+    {
+        function(operation_t::copy, this_void_ptr, other_void_ptr);
+    }
+
     template<std::size_t _M,
              typename _X=std::enable_if_t<_M <= _N>>
-    void copy_from_another(const static_any<_M>& another)
+    void copy_or_move_from_another(static_any<_M>&& another)
     {
         assert(function_ == nullptr);
 
@@ -332,7 +346,7 @@ private:
         void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.buff_.data()));
 
         try {
-            another.function_(operation_t::copy, buff_.data(), other_data);
+            call_copy_or_move<static_any<_M>&&>(another.function_, buff_.data(), other_data);
         }
         catch(...) {
             throw;
