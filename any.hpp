@@ -86,7 +86,7 @@ struct static_any
     template<std::size_t _M>
     static_any(const static_any<_M>& another)
     {
-        copy_or_move_from_another(std::forward<static_any<_M>>(another));
+        copy_or_move_from_another(another);
     }
 
     template<std::size_t _M>
