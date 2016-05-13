@@ -101,24 +101,6 @@ struct static_any
         copy_or_move_from_another(std::forward<static_any<_M>>(another));
     }
 
-    static_any& operator=(const static_any& another)
-    {
-        assign_from_another(another);
-        return *this;
-    }
-
-    static_any& operator=(static_any& another)
-    {
-        assign_from_another(another);
-        return *this;
-    }
-
-    static_any& operator=(static_any&& another)
-    {
-        assign_from_another(another);
-        return *this;
-    }
-
     template<std::size_t _M>
     static_any& operator=(const static_any<_M>& another)
     {
