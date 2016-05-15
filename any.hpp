@@ -469,10 +469,12 @@ private:
     template <typename _ValueT>
     void copy(_ValueT&& t)
     {
+        using NonConstT = std::remove_cv_t<std::remove_reference_t<_ValueT>>;
+
 #if __GNUC__ >= 5
-        static_assert(std::is_trivially_copyable<_ValueT>::value, "_ValueT is not trivially copyable");
+        static_assert(std::is_trivially_copyable<NonConstT>::value, "_ValueT is not trivially copyable");
 #else
-        static_assert(std::has_trivial_copy_constructor<_ValueT>::value, "_ValueT is not trivially copyable");
+        static_assert(std::has_trivial_copy_constructor<NonConstT>::value, "_ValueT is not trivially copyable");
 #endif
         static_assert(capacity() >= sizeof(_ValueT), "_ValueT is too big to be copied to static_any");
 
