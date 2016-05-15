@@ -63,24 +63,48 @@ As the main advantage of static\_any(\_t\<S\>) is speed, here is a comparison of
 boost.any, QVariant, static\_any\<S\> and static\_any\_t\<S\>.
 
 
-**assign an integer**
+**assign a double**
 ```
 Test             Time (ns)
 --------------------------
 qvariant                36
-boost.any               60
-static_any<8>            7
+boost.any               57
+std::any                 4
+static_any<8>            4
 static_any_t<8>          0
 ```
 
-**get an integer**
+**get a double**
 ```
 Test             Time (ns)
 --------------------------
-qvariant                 7
-boost.any               14
+qvariant                 9
+boost.any               12
+std::any                 9
+static_any<8>            9
+static_any_t<8>          6
+```
+
+**assign a small struct**
+```
+Test             Time (ns)
+--------------------------
+qvariant               294
+boost.any               47
+std::any                54
+static_any<8>           12
+static_any_t<8>          0
+```
+
+**get a small struct**
+```
+Test             Time (ns)
+--------------------------
+qvariant                12
+boost.any               48
+std::any                 6 
 static_any<8>            4
-static_any_t<8>          1
+static_any_t<8>          0
 ```
 
 **assign a string**
@@ -89,7 +113,8 @@ Test             Time (ns)
 --------------------------
 qvariant               400
 boost.any              143
-static_any<32>          98
+std::any               139
+static_any<32>          92
 ```
 
 **get a string**
@@ -98,6 +123,7 @@ Test             Time (ns)
 --------------------------
 qvariant                31
 boost.any               64
+std::any                30
 static_any<32>           4
 ```
 
