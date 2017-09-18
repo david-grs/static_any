@@ -1,25 +1,49 @@
 cmake_minimum_required(VERSION 2.8)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wextra")
+project(static_any)
+include(gtest.cmake)
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+SET(COVERAGE OFF CACHE BOOL "Coverage")
+set(BUILD_BENCHMARK OFF CACHE BOOL "Build benchmark against boost.any and qvariant")
 
-find_package(GTest REQUIRED)
-include_directories(${GTEST_INCLUDE_DIRS})
+add_executable(tests any.hpp unit_tests.cpp)
 
 add_library(dyn_lib SHARED dyn_lib.cpp dyn_lib.hpp)
 
-add_executable(tests any.hpp unit_tests.cpp)
-target_link_libraries(tests dyn_lib ${GTEST_BOTH_LIBRARIES} pthread)
+find_package (Threads)
+target_link_libraries(tests dyn_lib gtest ${CMAKE_THREAD_LIBS_INIT})
 
-set(BUILD_BENCHMARK OFF CACHE BOOL "Build benchmark against boost.any and qvariant")
+if (MSVC)
+	target_compile_options(tests PRIVATE /std:c++17 /W4 /WX)
+
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Ox")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Od")
+
+	# VS 2017 removed tr1
+	add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
+else()
+	target_compile_options(tests PRIVATE -std=c++14 -g -Wall -Wextra -Wpedantic -Wconversion -Wswitch-default -Wswitch-enum -Wunreachable-code -Wwrite-strings -Wcast-align -Wshadow -Wundef)
+
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
+
+	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+		target_compile_options(tests PRIVATE -Weverything -Wno-c++98-compat -Wno-global-constructors)
+	endif()
+
+	if (COVERAGE)
+		target_compile_options(tests PRIVATE --coverage)
+		target_link_libraries(tests PRIVATE --coverage)
+	endif()
+endif()
+
 if(BUILD_BENCHMARK)
     if(NOT CMAKE_BUILD_TYPE MATCHES Release)
-      message(WARNING "Benchmark should be build in Release mode")
+        message(WARNING "Benchmark should be build in Release mode")
     endif()
 
     find_package(Qt4 REQUIRED)
     add_executable(benchmark benchmark.cpp)
     target_link_libraries(benchmark papi Qt4::QtCore)
 endif()
+
