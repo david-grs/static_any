@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/david-grs/static_any.svg?branch=master)](https://travis-ci.org/david-grs/static_any)
+
 static\_any\<S\>
 ================
 A container for generic (as *general*) data type &mdash; like boost.any. However:
