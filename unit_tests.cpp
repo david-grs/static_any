@@ -22,16 +22,16 @@ TEST(any, readme_example)
 	a = std::string("Hello world");
 	ASSERT_EQ(std::string("Hello world"), a.get<std::string>());
 
-	struct A
+	struct AA
 	{
-		explicit A(long i = 0, double d = .0)
+		explicit AA(long i = 0, double d = .0)
 		 : i_(i), d_(d) {}
 
 		long i_;
 		double d_;
 	};
 
-	a = A(12, .34);
+	a = AA(12, .34);
 }
 
 TEST(any, test_sizeof)
@@ -343,10 +343,11 @@ TEST(any, any_to_bigger_any_copy)
 
 struct InitCtor
 {
+	InitCtor() = default;
+	InitCtor(int _x, int _y) : x(_x), y(_y) {}
+
 	int x = 1;
 	int y = 2;
-	InitCtor() = default;
-	InitCtor(int x, int y) : x(x), y(y) {}
 };
 
 TEST(any, emplace_no_params)
