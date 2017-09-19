@@ -43,14 +43,16 @@ static void operation(operation_t operation, void* ptr1, void* ptr2)
 			break;
 		}
 		case operation_t::move:
-		{    _T* other_ptr = reinterpret_cast<_T*>(ptr2);
+		{
+			_T* other_ptr = reinterpret_cast<_T*>(ptr2);
 			assert(this_ptr);
 			assert(other_ptr);
 			new(this_ptr)_T(std::move(*other_ptr));
 			break;
 		}
 		case operation_t::destroy:
-		{    assert(this_ptr);
+		{
+			assert(this_ptr);
 			this_ptr->~_T();
 			break;
 		}
