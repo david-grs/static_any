@@ -471,11 +471,12 @@ private:
 	{
 		using NonConstT = std::remove_cv_t<std::remove_reference_t<_ValueT>>;
 
-#if __GNUC__ >= 5
-		static_assert(std::is_trivially_copyable<NonConstT>::value, "_ValueT is not trivially copyable");
-#else
+#if __GNUG__ && __GNUC__ < 5
 		static_assert(std::has_trivial_copy_constructor<NonConstT>::value, "_ValueT is not trivially copyable");
+#else
+		static_assert(std::is_trivially_copyable<NonConstT>::value, "_ValueT is not trivially copyable");
 #endif
+
 		static_assert(capacity() >= sizeof(_ValueT), "_ValueT is too big to be copied to static_any");
 
 		std::memcpy(buff_.data(), (char*)&t, sizeof(_ValueT));
