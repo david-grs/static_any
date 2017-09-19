@@ -1,4 +1,6 @@
 [![Build Status](https://travis-ci.org/david-grs/static_any.svg?branch=master)](https://travis-ci.org/david-grs/static_any)
+[![Build status](https://ci.appveyor.com/api/projects/status/cm8wnp77xaywril0/branch/master?svg=true)](https://ci.appveyor.com/project/david-grs/static-any/branch/master)
+[![Coverage Status](https://coveralls.io/repos/github/david-grs/static_any/badge.svg?branch=master)](https://coveralls.io/github/david-grs/static_any?branch=master)
 
 static\_any\<S\>
 ================
