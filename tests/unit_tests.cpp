@@ -532,6 +532,9 @@ TEST(any_exception, restore_when_failed)
 	EXPECT_EQ(typeid(int), a.type());
 }
 
+// doesn't compile on VS
+#ifndef _MSC_VER
+
 struct unsafe_to_construct
 {
 	[[noreturn]] unsafe_to_construct() { throw 123; }
@@ -543,6 +546,8 @@ TEST(any_exception, emplace)
 	EXPECT_THROW(a.emplace<unsafe_to_construct>(), int);
 	EXPECT_TRUE(a.empty());
 }
+
+#endif
 
 TEST(any_exception, copy_from_any)
 {
