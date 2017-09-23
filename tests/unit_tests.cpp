@@ -496,7 +496,7 @@ TEST(any_t, simple)
 struct unsafe_to_copy
 {
 	unsafe_to_copy() =default;
-	unsafe_to_copy(const unsafe_to_copy&) { throw 123; }
+	[[noreturn]] unsafe_to_copy(const unsafe_to_copy&) { throw 123; }
 };
 
 TEST(any_exception, init)
@@ -534,7 +534,7 @@ TEST(any_exception, restore_when_failed)
 
 struct unsafe_to_construct
 {
-	unsafe_to_construct() { throw 123; };
+	[[noreturn]] unsafe_to_construct() { throw 123; }
 };
 
 TEST(any_exception, emplace)

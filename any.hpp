@@ -363,22 +363,16 @@ private:
 struct bad_any_cast : public std::bad_cast
 {
 	bad_any_cast(const std::type_info& from,
-				 const std::type_info& to)
-	: from_(from),
-	  to_(to)
-	{
-		std::ostringstream oss;
-		oss << "failed conversion using any_cast: stored type "
-			<< from.name()
-			<< ", trying to cast to "
-			<< to.name();
-		reason_ = oss.str();
-	}
+				 const std::type_info& to);
+
+	virtual ~bad_any_cast();
+
+	bad_any_cast(const bad_any_cast&) =default;
 
 	const std::type_info& stored_type() const { return from_; }
 	const std::type_info& target_type() const { return to_; }
 
-	virtual const char* what() const throw()
+	virtual const char* what() const noexcept override
 	{
 		return reason_.c_str();
 	}
@@ -388,6 +382,21 @@ private:
 	const std::type_info& to_;
 	std::string reason_;
 };
+
+bad_any_cast::bad_any_cast(const std::type_info& from,
+			 const std::type_info& to)
+: from_(from),
+  to_(to)
+{
+	std::ostringstream oss;
+	oss << "failed conversion using any_cast: stored type "
+		<< from.name()
+		<< ", trying to cast to "
+		<< to.name();
+	reason_ = oss.str();
+}
+
+bad_any_cast::~bad_any_cast() {}
 
 template <typename _ValueT,
 		  std::size_t _S>
@@ -481,7 +490,7 @@ private:
 
 		static_assert(capacity() >= sizeof(_ValueT), "_ValueT is too big to be copied to static_any");
 
-		std::memcpy(buff_.data(), (char*)&t, sizeof(_ValueT));
+		std::memcpy(buff_.data(), reinterpret_cast<char*>(&t), sizeof(_ValueT));
 	}
 
 	std::array<char, _N> buff_;
