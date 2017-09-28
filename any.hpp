@@ -383,7 +383,7 @@ private:
 	std::string reason_;
 };
 
-bad_any_cast::bad_any_cast(const std::type_info& from,
+inline bad_any_cast::bad_any_cast(const std::type_info& from,
 			 const std::type_info& to)
 : from_(from),
   to_(to)
@@ -396,7 +396,7 @@ bad_any_cast::bad_any_cast(const std::type_info& from,
 	reason_ = oss.str();
 }
 
-bad_any_cast::~bad_any_cast() {}
+inline bad_any_cast::~bad_any_cast() {}
 
 template <typename _ValueT,
 		  std::size_t _S>
