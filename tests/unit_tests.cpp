@@ -12,8 +12,7 @@ struct A
 
 TEST(any, readme_example)
 {
-	static_any<32> a; // on g++ 5.x sizeof(std::string) is 32
-	static_assert(sizeof(a) == 32 + sizeof(std::ptrdiff_t), "impossible");
+	static_any<sizeof(std::string)> a; // on g++ 5.x sizeof(std::string) is 32
 
 	a = 1234;
 	ASSERT_EQ(1234, a.get<int>());
@@ -31,12 +30,6 @@ TEST(any, readme_example)
 	};
 
 	a = AA(12, .34);
-}
-
-TEST(any, test_sizeof)
-{
-	static_any<16> a;
-	ASSERT_EQ(16 + sizeof(std::ptrdiff_t), sizeof(a));
 }
 
 TEST(any, capacity)

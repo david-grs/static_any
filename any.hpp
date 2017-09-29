@@ -71,6 +71,7 @@ template <std::size_t _N>
 struct static_any
 {
 	typedef std::size_t size_type;
+	typedef std::aligned_storage_t<_N> storage_t;
 
 	static_any() = default;
 
@@ -186,7 +187,7 @@ struct static_any
 	void emplace(Args&&... args)
 	{
 		destroy();
-		new(buff_.data()) _T(std::forward<Args>(args)...);
+		new(&buff_) _T(std::forward<Args>(args)...);
 		function_ = detail::static_any::get_function_for_type<_T>();
 	}
 
@@ -204,7 +205,7 @@ private:
 		NonConstT* non_const_t = const_cast<NonConstT*>(&t);
 
 		try {
-			call_copy_or_move<_T&&>(buff_.data(), non_const_t);
+			call_copy_or_move<_T&&>(&buff_, non_const_t);
 		}
 		catch(...) {
 			throw;
@@ -221,10 +222,10 @@ private:
 		using NonConstT = std::remove_cv_t<std::remove_reference_t<_T>>;
 		NonConstT* non_const_t = const_cast<NonConstT*>(&t);
 
-		std::array<char, _N> buff;
+		storage_t buff;
 
 		try {
-			call_copy_or_move<_T&&>(buff.data(), non_const_t);
+			call_copy_or_move<_T&&>(&buff, non_const_t);
 		}
 		catch(...) {
 			throw;
@@ -272,7 +273,7 @@ private:
 		if (function_)
 		{
 			void* not_used = nullptr;
-			function_(operation_t::destroy, buff_.data(), not_used);
+			function_(operation_t::destroy, &buff_, not_used);
 			function_ = nullptr;
 		}
 	}
@@ -280,13 +281,13 @@ private:
 	template<typename _T>
 	const _T* as() const
 	{
-		return reinterpret_cast<const _T*>(buff_.data());
+		return reinterpret_cast<const _T*>(&buff_);
 	}
 
 	template<typename _T>
 	_T* as()
 	{
-		return reinterpret_cast<_T*>(buff_.data());
+		return reinterpret_cast<_T*>(&buff_);
 	}
 
 	template <typename _RefT>
@@ -312,10 +313,10 @@ private:
 		if (another.function_ == nullptr)
 			return;
 
-		void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.buff_.data()));
+		void* other_data = reinterpret_cast<void*>(const_cast<decltype(another.buff_)*>(&another.buff_));
 
 		try {
-			call_copy_or_move<static_any<_M>&&>(another.function_, buff_.data(), other_data);
+			call_copy_or_move<static_any<_M>&&>(another.function_, &buff_, other_data);
 		}
 		catch(...) {
 			throw;
@@ -331,11 +332,11 @@ private:
 		if (another.function_ == nullptr)
 			return;
 
-		void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.buff_.data()));
-		std::array<char, _N> buff;
+		void* other_data = reinterpret_cast<void*>(const_cast<decltype(another.buff_)*>(&another.buff_));
+		storage_t buff;
 
 		try {
-			another.function_(operation_t::copy, buff.data(), other_data);
+			another.function_(operation_t::copy, &buff, other_data);
 		}
 		catch(...) {
 			throw;
@@ -347,7 +348,7 @@ private:
 		buff_ = buff;
 	}
 
-	std::array<char, _N> buff_;
+	storage_t buff_;
 	function_ptr_t function_ = nullptr;
 
 	template<std::size_t _S>
@@ -451,6 +452,7 @@ template <std::size_t _N>
 struct static_any_t
 {
 	typedef std::size_t size_type;
+	typedef std::aligned_storage_t<_N> storage_t;
 
 	static constexpr size_type capacity() { return _N; }
 
@@ -471,10 +473,10 @@ struct static_any_t
 	}
 
 	template <typename _ValueT>
-	_ValueT& get() { return *reinterpret_cast<_ValueT*>(buff_.data()); }
+	_ValueT& get() { return *reinterpret_cast<_ValueT*>(&buff_); }
 
 	template <typename _ValueT>
-	const _ValueT& get() const { return *reinterpret_cast<const _ValueT*>(buff_.data()); }
+	const _ValueT& get() const { return *reinterpret_cast<const _ValueT*>(&buff_); }
 
 private:
 	template <typename _ValueT>
@@ -490,8 +492,8 @@ private:
 
 		static_assert(capacity() >= sizeof(_ValueT), "_ValueT is too big to be copied to static_any");
 
-		std::memcpy(buff_.data(), reinterpret_cast<char*>(&t), sizeof(_ValueT));
+		std::memcpy(&buff_, reinterpret_cast<char*>(&t), sizeof(_ValueT));
 	}
 
-	std::array<char, _N> buff_;
+	storage_t buff_;
 };
