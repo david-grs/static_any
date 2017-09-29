@@ -489,8 +489,23 @@ TEST(any, type_identification_across_dll)
 
 TEST(any_t, simple)
 {
-	static_any_t<16> a(7);
+	static_any_t<sizeof(int)> a(7);
 	ASSERT_EQ(7, a.get<int>());
+}
+
+TEST(any_t, copy_from_any_t)
+{
+	static_any_t<sizeof(int)> a(7);
+	static_any_t<sizeof(int)> b(a);
+	ASSERT_EQ(7, b.get<int>());
+}
+
+TEST(any_t, move_from_any_t)
+{
+	static_any_t<sizeof(int)> a(7);
+	static_any_t<sizeof(int)> b(std::move(a));
+	ASSERT_EQ(7, a.get<int>());
+	ASSERT_EQ(7, b.get<int>());
 }
 
 struct unsafe_to_copy
