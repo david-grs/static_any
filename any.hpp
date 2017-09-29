@@ -234,8 +234,9 @@ private:
 		destroy();
 		assert(function_ == nullptr);
 
+		call_copy_or_move<_T&&>(&buff_, &buff);
 		function_ = detail::static_any::get_function_for_type<_T>();
-		buff_ = buff;
+		function_(operation_t::destroy, &buff, nullptr);
 	}
 
 	template <typename _RefT>
@@ -345,7 +346,8 @@ private:
 		destroy();
 
 		function_= another.function_;
-		buff_ = buff;
+		function_(operation_t::copy, &buff_, &buff);
+		function_(operation_t::destroy, &buff, nullptr);
 	}
 
 	storage_t buff_;
