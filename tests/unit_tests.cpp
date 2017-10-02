@@ -362,6 +362,16 @@ TEST(any, emplace_params)
 	EXPECT_EQ(88, a.get<InitCtor>().y);
 }
 
+TEST(any, empty_any_to_any_assignment)
+{
+	static_any<32> a(1234);
+	static_any<32> b;
+
+	ASSERT_FALSE(a.empty());
+	a = b;
+	ASSERT_TRUE(a.empty());
+}
+
 TEST(any, destroyed_after_emplace)
 {
 	CallCounter::reset_counters();

@@ -347,8 +347,10 @@ private:
 			 typename _X=std::enable_if_t<_M <= _N>>
 	void assign_from_another(const static_any<_M>& another)
 	{
-		if (another.function_ == nullptr)
+		if (another.function_ == nullptr) {
+			destroy();
 			return;
+		}
 
 		bool nothrow_copy, nothrow_move;
 		storage_t old_buff;
