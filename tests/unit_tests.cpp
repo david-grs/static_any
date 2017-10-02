@@ -12,7 +12,7 @@ struct A
 
 TEST(any, readme_example)
 {
-	static_any<sizeof(std::string)> a; // on g++ 5.x sizeof(std::string) is 32
+	static_any<64> a;
 
 	a = 1234;
 	ASSERT_EQ(1234, a.get<int>());
