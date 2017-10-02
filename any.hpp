@@ -13,7 +13,7 @@
 namespace detail { namespace static_any {
 
 // Pointer to administrative function, function that will by type-specific, and will be able to perform all the required operations
-enum class operation_t { query_type, query_size, copy, move, destroy };
+enum class operation_t { query_type, query_size, query_noexcept, copy, move, destroy };
 
 using function_ptr_t = void(*)(operation_t operation, void* this_ptr, void* other_ptr);
 
@@ -32,6 +32,12 @@ static void operation(operation_t operation, void* ptr1, void* ptr2)
 		case operation_t::query_size:
 		{
 			*reinterpret_cast<std::size_t*>(ptr1) = sizeof(_T);
+			break;
+		}
+		case operation_t::query_noexcept:
+		{
+			*reinterpret_cast<bool*>(ptr1) = std::is_nothrow_copy_constructible<_T>::value;
+			*reinterpret_cast<bool*>(ptr2) = std::is_nothrow_move_constructible<_T>::value;
 			break;
 		}
 		case operation_t::copy:
@@ -222,21 +228,32 @@ private:
 		using NonConstT = std::remove_cv_t<std::remove_reference_t<_T>>;
 		NonConstT* non_const_t = const_cast<NonConstT*>(&t);
 
-		storage_t buff;
+		storage_t old_buff;
+		function_ptr_t old_function;
+		constexpr bool cannot_throw =
+			std::conditional<std::is_rvalue_reference<_T>::value,
+				typename std::is_nothrow_move_constructible<_T>,
+				typename std::is_nothrow_copy_constructible<_T>>::type::value;
 
-		try {
-			call_copy_or_move<_T&&>(&buff, non_const_t);
-		}
-		catch(...) {
-			throw;
+		if(!cannot_throw) {
+			old_buff = buff_;
+			old_function = function_;
 		}
 
 		destroy();
-		assert(function_ == nullptr);
 
-		call_copy_or_move<_T&&>(&buff_, &buff);
+		try {
+			call_copy_or_move<_T&&>(&buff_, non_const_t);
+		}
+		catch(...) {
+			if(!cannot_throw) {
+				buff_ = old_buff;
+				function_ = old_function;
+			}
+			throw;
+		}
+
 		function_ = detail::static_any::get_function_for_type<_T>();
-		function_(operation_t::destroy, &buff, nullptr);
 	}
 
 	template <typename _RefT>
@@ -333,21 +350,32 @@ private:
 		if (another.function_ == nullptr)
 			return;
 
-		void* other_data = reinterpret_cast<void*>(const_cast<decltype(another.buff_)*>(&another.buff_));
-		storage_t buff;
+		bool nothrow_copy, nothrow_move;
+		storage_t old_buff;
+		function_ptr_t old_function = nullptr;
+		another.function_(operation_t::query_noexcept, &nothrow_copy, &nothrow_move);
 
-		try {
-			another.function_(operation_t::copy, &buff, other_data);
+		if(!nothrow_copy) {
+			 old_buff = buff_;
+			 old_function = function_;
 		}
-		catch(...) {
-			throw;
-		}
+
+		void* other_data = reinterpret_cast<void*>(const_cast<decltype(another.buff_)*>(&another.buff_));
 
 		destroy();
 
+		try {
+			another.function_(operation_t::copy, &buff_, other_data);
+		}
+		catch(...) {
+			if(!nothrow_copy) {
+				buff_ = old_buff;
+				function_ = old_function;
+			}
+			throw;
+		}
+
 		function_= another.function_;
-		function_(operation_t::copy, &buff_, &buff);
-		function_(operation_t::destroy, &buff, nullptr);
 	}
 
 	storage_t buff_;
