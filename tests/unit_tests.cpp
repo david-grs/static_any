@@ -63,25 +63,36 @@ TEST(any, size)
 
 struct CallCounter
 {
-	CallCounter() noexcept { default_constructions++; }
-	CallCounter(const CallCounter&) noexcept { copy_constructions++; }
-	CallCounter(CallCounter&&) noexcept { move_constructions++; }
-	~CallCounter() { destructions++; }
+	CallCounter() noexcept { alive_count++; default_constructions++; }
+	CallCounter(const CallCounter&) noexcept { alive_count++; copy_constructions++; }
+	CallCounter(CallCounter&&) noexcept { alive_count++; move_constructions++; }
+	~CallCounter() {
+		assert(alive);
+		alive = false;
+		destructions++;
+		alive_count--;
+		assert(alive_count >= 0);
+	}
 
 	static void reset_counters()
 	{
+		// Do not reset alive_count, it is for correctness checking
 		default_constructions = 0;
 		copy_constructions = 0;
 		move_constructions = 0;
 		destructions = 0;
 	}
 
+	bool alive = true;
+
+	static int alive_count;
 	static int default_constructions;
 	static int copy_constructions;
 	static int move_constructions;
 	static int destructions;
 };
 
+int CallCounter::alive_count = 0;
 int CallCounter::default_constructions = 0;
 int CallCounter::copy_constructions = 0;
 int CallCounter::move_constructions = 0;
@@ -561,28 +572,30 @@ TEST(any_exception, emplace)
 
 TEST(any_exception, copy_from_any)
 {
-	constexpr auto size = std::max(sizeof(int), sizeof(unsafe_to_copy));
+	constexpr auto size = std::max(sizeof(CallCounter), sizeof(unsafe_to_copy));
 	static_any<size> a;
 	a.emplace<unsafe_to_copy>();
 
-	static_any<size> b(1234);
+	static_any<size> b((CallCounter()));
+	CallCounter::reset_counters();
 	EXPECT_THROW(b = a, int);
 
 	EXPECT_FALSE(b.empty());
-	EXPECT_EQ(1234, b.get<int>());
-	EXPECT_EQ(typeid(int), b.type());
+	EXPECT_EQ(typeid(CallCounter), b.type());
 }
 
 TEST(any_exception, move_from_any)
 {
-	constexpr auto size = std::max(sizeof(int), sizeof(unsafe_to_copy));
+	constexpr auto size = std::max(sizeof(CallCounter), sizeof(unsafe_to_copy));
 	static_any<size> a;
 	a.emplace<unsafe_to_copy>();
 
-	static_any<size> b(1234);
+	static_any<size> b((CallCounter()));
+	CallCounter::reset_counters();
 	EXPECT_THROW(b = std::move(a), int);
 
-	EXPECT_EQ(1234, b.get<int>());
+	EXPECT_FALSE(b.empty());
+	EXPECT_EQ(typeid(CallCounter), b.type());
 }
 
 TEST(any_exception, throwing_construct_strong_guarantee)
