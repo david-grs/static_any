@@ -34,19 +34,21 @@ TEST(any, readme_example)
 
 TEST(any, capacity)
 {
-	static_any<32> a;
-	ASSERT_EQ(32, a.capacity());
+	constexpr std::size_t size = sizeof(std::string);
+	static_any<size> a;
+	ASSERT_EQ(size, a.capacity());
 
 	a = std::string("hello world");
-	ASSERT_EQ(32, a.capacity());
+	ASSERT_EQ(size, a.capacity());
 
 	a.reset();
-	ASSERT_EQ(32, a.capacity());
+	ASSERT_EQ(size, a.capacity());
 }
 
 TEST(any, size)
 {
-	static_any<32> a;
+	constexpr std::size_t size = std::max(sizeof(std::string), sizeof(int));
+	static_any<size> a;
 	ASSERT_EQ(0, a.size());
 
 	a = 1234;
@@ -93,13 +95,13 @@ TEST(any, default_constructed_is_empty)
 
 TEST(any, contructed_with_param_non_empty)
 {
-	static_any<16> a(77); // will contain integer
+	static_any<sizeof(int)> a(77); // will contain integer
 	ASSERT_FALSE(a.empty());
 }
 
 TEST(any, has)
 {
-	static_any<16> a(77); // will contain integer
+	static_any<sizeof(int)> a(77); // will contain integer
 	ASSERT_TRUE(a.has<int>());
 	ASSERT_FALSE(a.has<double>());
 }
@@ -108,7 +110,7 @@ TEST(any, move_construct)
 {
 	CallCounter::reset_counters();
 	CallCounter counter;
-	static_any<16> a(std::move(counter));
+	static_any<sizeof(CallCounter)> a(std::move(counter));
 
 	ASSERT_EQ(1, CallCounter::default_constructions);
 	ASSERT_EQ(0, CallCounter::copy_constructions);
@@ -120,7 +122,7 @@ TEST(any, copy_construct)
 {
 	CallCounter::reset_counters();
 	CallCounter counter;
-	static_any<16> a(counter);
+	static_any<sizeof(CallCounter)> a(counter);
 
 	ASSERT_EQ(1, CallCounter::default_constructions);
 	ASSERT_EQ(1, CallCounter::copy_constructions);
@@ -133,7 +135,7 @@ TEST(any, destruction)
 	CallCounter::reset_counters();
 	CallCounter counter;
 	{
-		static_any<16> a(counter);
+		static_any<sizeof(CallCounter)> a(counter);
 	}
 
 	ASSERT_EQ(1, CallCounter::destructions);
@@ -144,7 +146,7 @@ TEST(any, reset_destruction)
 	CallCounter::reset_counters();
 	CallCounter counter;
 
-	static_any<16> a(counter);
+	static_any<sizeof(CallCounter)> a(counter);
 	a.reset();
 
 	ASSERT_EQ(1, CallCounter::destructions);
@@ -152,10 +154,11 @@ TEST(any, reset_destruction)
 
 TEST(any, copy_assignment)
 {
+	constexpr auto size = std::max(sizeof(int), sizeof(CallCounter));
 	CallCounter::reset_counters();
 	CallCounter counter;
 
-	static_any<16> a(1);
+	static_any<size> a(1);
 	a = counter;
 
 	ASSERT_EQ(1, CallCounter::default_constructions);
@@ -168,7 +171,7 @@ TEST(any, move_assignment)
 	CallCounter::reset_counters();
 	CallCounter counter;
 
-	static_any<16> a;
+	static_any<sizeof(CallCounter)> a;
 	a = std::move(counter);
 
 	ASSERT_EQ(1, CallCounter::default_constructions);
@@ -179,11 +182,11 @@ TEST(any, move_assignment)
 TEST(any, any_move_ctor)
 {
 	CallCounter counter;
-	static_any<16> a(counter);
+	static_any<sizeof(CallCounter)> a(counter);
 
 	CallCounter::reset_counters();
 
-	static_any<16> b(std::move(a));
+	static_any<sizeof(CallCounter)> b(std::move(a));
 
 	ASSERT_EQ(0, CallCounter::default_constructions);
 	ASSERT_EQ(0, CallCounter::copy_constructions);
@@ -192,12 +195,13 @@ TEST(any, any_move_ctor)
 /*
 TEST(any, any_move_assignment)
 {
+	constexpr auto size = std::max(sizeof(int), sizeof(CallCounter));
 	CallCounter counter;
-	static_any<16> a(counter);
+	static_any<size> a(counter);
 
 	CallCounter::reset_counters();
 
-	static_any<16> b = 123;
+	static_any<size> b = 123;
 	b = std::move(a);
 
 	ASSERT_EQ(0, CallCounter::default_constructions);
@@ -210,7 +214,7 @@ TEST(any, reassignment)
 	CallCounter::reset_counters();
 	CallCounter counter;
 
-	static_any<16> a(counter);
+	static_any<sizeof(CallCounter)> a(counter);
 	a = counter;
 
 	ASSERT_EQ(1, CallCounter::default_constructions);
@@ -221,7 +225,7 @@ TEST(any, reassignment)
 
 TEST(any, not_empty_after_assignment)
 {
-	static_any<16> a;
+	static_any<sizeof(int)> a;
 	ASSERT_TRUE(a.empty());
 	a = 7;
 	ASSERT_FALSE(a.empty());
@@ -229,7 +233,8 @@ TEST(any, not_empty_after_assignment)
 
 TEST(any, different_type_after_assignment)
 {
-	static_any<16> a(7);
+	constexpr auto size = std::max(sizeof(int), sizeof(double));
+	static_any<size> a(7);
 	ASSERT_TRUE(a.has<int>());
 	ASSERT_FALSE(a.has<double>());
 	a = 3.14;
@@ -239,14 +244,14 @@ TEST(any, different_type_after_assignment)
 
 TEST(any, get_good_type)
 {
-	static_any<16> a(7);
+	static_any<sizeof(int)> a(7);
 	auto i = a.get<int>();
 	ASSERT_EQ(7, i);
 }
 
 TEST(any, get_bad_type)
 {
-	static_any<16> a(7);
+	static_any<sizeof(int)> a(7);
 	EXPECT_THROW(a.get<double>(), std::bad_cast);
 }
 
@@ -264,9 +269,9 @@ TEST(any, cast_empty)
 
 TEST(any, mutable_get)
 {
-	static_any<16> a(7);
+	static_any<sizeof(int)> a(7);
 	a.get<int>() = 6;
-	const static_any<16>& const_ref = a;
+	const static_any<sizeof(int)>& const_ref = a;
 	auto i = const_ref.get<int>();
 	ASSERT_EQ(6, i);
 }
@@ -282,8 +287,8 @@ TEST(any, any_to_any_copy_uninitialized)
 
 TEST(any, any_to_any_copy_construction)
 {
-	static_any<16> a(7);
-	static_any<16> b(a);
+	static_any<sizeof(int)> a(7);
+	static_any<sizeof(int)> b(a);
 
 	ASSERT_EQ(7, a.get<int>());
 	ASSERT_EQ(7, b.get<int>());
@@ -291,8 +296,8 @@ TEST(any, any_to_any_copy_construction)
 
 TEST(any, any_to_any_assignment)
 {
-	static_any<32> a(std::string("Hello"));
-	static_any<32> b;
+	static_any<sizeof(std::string)> a(std::string("Hello"));
+	static_any<sizeof(std::string)> b;
 
 	ASSERT_TRUE(b.empty());
 	b = a;
@@ -304,8 +309,8 @@ TEST(any, any_to_any_assignment)
 
 TEST(any, any_to_any_move_construction)
 {
-	static_any<32> a(std::string("Hello"));
-	static_any<32> b = std::move(a);
+	static_any<sizeof(std::string)> a(std::string("Hello"));
+	static_any<sizeof(std::string)> b = std::move(a);
 
 	ASSERT_FALSE(a.empty());
 	ASSERT_FALSE(b.empty());
@@ -315,10 +320,10 @@ TEST(any, any_to_any_move_construction)
 
 TEST(any, any_to_bigger_any)
 {
-	static_any<16> a(1);
+	static_any<sizeof(int)> a(1);
 	ASSERT_EQ(1, a.get<int>());
 
-	static_any<32> b(2);
+	static_any<2 * sizeof(int)> b(2);
 	b = a;
 
 	ASSERT_EQ(1, b.get<int>());
@@ -326,10 +331,10 @@ TEST(any, any_to_bigger_any)
 
 TEST(any, any_to_bigger_any_copy)
 {
-	static_any<16> a(1);
+	static_any<sizeof(int)> a(1);
 	ASSERT_EQ(1, a.get<int>());
 
-	static_any<32> b = a;
+	static_any<2 * sizeof(int)> b = a;
 	ASSERT_EQ(1, b.get<int>());
 }
 
@@ -344,7 +349,7 @@ struct InitCtor
 
 TEST(any, emplace_no_params)
 {
-	static_any<32> a;
+	static_any<sizeof(InitCtor)> a;
 	a.emplace<InitCtor>();
 
 	ASSERT_FALSE(a.empty());
@@ -354,7 +359,7 @@ TEST(any, emplace_no_params)
 
 TEST(any, emplace_params)
 {
-	static_any<32> a;
+	static_any<sizeof(InitCtor)> a;
 	a.emplace<InitCtor>(77, 88);
 
 	ASSERT_FALSE(a.empty());
@@ -364,8 +369,8 @@ TEST(any, emplace_params)
 
 TEST(any, empty_any_to_any_assignment)
 {
-	static_any<32> a(1234);
-	static_any<32> b;
+	static_any<sizeof(int)> a(1234);
+	static_any<sizeof(int)> b;
 
 	ASSERT_FALSE(a.empty());
 	a = b;
@@ -376,7 +381,7 @@ TEST(any, destroyed_after_emplace)
 {
 	CallCounter::reset_counters();
 	{
-		static_any<32> a;
+		static_any<sizeof(CallCounter)> a;
 		a.emplace<CallCounter>();
 	}
 
@@ -386,13 +391,13 @@ TEST(any, destroyed_after_emplace)
 
 TEST(any, any_cast_pointer_correct_type)
 {
-	static_any<16> a(7);
+	static_any<sizeof(int)> a(7);
 	ASSERT_EQ(7, *any_cast<int>(&a));
 }
 
 TEST(any, any_cast_pointer_constness)
 {
-	static_any<16> a(7);
+	static_any<sizeof(int)> a(7);
 	const auto* a2 = &a;
 
 	auto* pv  = any_cast<int>(&a);
@@ -407,20 +412,20 @@ TEST(any, any_cast_pointer_constness)
 
 TEST(any, any_cast_pointer_wrong_type)
 {
-	static_any<16> a(7);
+	static_any<sizeof(int)> a(7);
 	ASSERT_EQ(nullptr, any_cast<float>(&a));
 }
 
 TEST(any, any_cast_reference_correct_type)
 {
-	static_any<16> a(7);
+	static_any<sizeof(int)> a(7);
 	ASSERT_EQ(7, any_cast<int>(a));
 }
 
 
 TEST(any, any_cast_reference_constness)
 {
-	static_any<16> a(7);
+	static_any<sizeof(int)> a(7);
 	const auto& a2 = a;
 
 	auto& pv = any_cast<int>(a);
@@ -435,13 +440,13 @@ TEST(any, any_cast_reference_constness)
 
 TEST(any, any_cast_reference_wrong_type)
 {
-	static_any<16> a(7);
+	static_any<sizeof(int)> a(7);
 	EXPECT_THROW(any_cast<float>(a), bad_any_cast);
 }
 
 TEST(any, any_cast_reference_wrong_type_from_to)
 {
-	static_any<16> a(7);
+	static_any<sizeof(int)> a(7);
 
 	try {
 		auto f = any_cast<float>(a);
@@ -456,7 +461,8 @@ TEST(any, any_cast_reference_wrong_type_from_to)
 
 TEST(any, query_type)
 {
-	static_any<32> a(7);
+	constexpr auto size = std::max(sizeof(int), sizeof(std::string));
+	static_any<size> a(7);
 	ASSERT_EQ(typeid(int), a.type());
 
 	a = std::string("f00");
@@ -465,7 +471,7 @@ TEST(any, query_type)
 
 TEST(any, reset_empty)
 {
-	static_any<16> a(7);
+	static_any<sizeof(int)> a(7);
 	ASSERT_FALSE(a.empty());
 	a.reset();
 	ASSERT_TRUE(a.empty());
@@ -473,7 +479,7 @@ TEST(any, reset_empty)
 
 TEST(any, reset_has)
 {
-	static_any<16> a(7);
+	static_any<sizeof(int)> a(7);
 	ASSERT_TRUE(a.has<int>());
 	a.reset();
 	ASSERT_FALSE(a.has<int>());
@@ -504,12 +510,12 @@ struct unsafe_to_copy
 
 TEST(any_exception, init)
 {
-	EXPECT_THROW(static_any<16> a = unsafe_to_copy(), int);
+	EXPECT_THROW(static_any<sizeof(unsafe_to_copy)> a = unsafe_to_copy(), int);
 }
 
 TEST(any_exception, move)
 {
-	static_any<16> a;
+	static_any<sizeof(unsafe_to_copy)> a;
 
 	EXPECT_THROW(a = unsafe_to_copy(), int);
 	EXPECT_TRUE(a.empty());
@@ -517,7 +523,7 @@ TEST(any_exception, move)
 
 TEST(any_exception, copy)
 {
-	static_any<16> a;
+	static_any<sizeof(unsafe_to_copy)> a;
 	unsafe_to_copy u;
 
 	EXPECT_THROW(a = u, int);
@@ -526,7 +532,8 @@ TEST(any_exception, copy)
 
 TEST(any_exception, restore_when_failed)
 {
-	static_any<16> a(1234);
+	constexpr auto size = std::max(sizeof(int), sizeof(unsafe_to_copy));
+	static_any<size> a(1234);
 
 	EXPECT_THROW(a = unsafe_to_copy(), int);
 
@@ -545,7 +552,7 @@ struct unsafe_to_construct
 
 TEST(any_exception, emplace)
 {
-	static_any<16> a;
+	static_any<sizeof(unsafe_to_construct)> a;
 	EXPECT_THROW(a.emplace<unsafe_to_construct>(), int);
 	EXPECT_TRUE(a.empty());
 }
@@ -554,10 +561,11 @@ TEST(any_exception, emplace)
 
 TEST(any_exception, copy_from_any)
 {
-	static_any<16> a;
+	constexpr auto size = std::max(sizeof(int), sizeof(unsafe_to_copy));
+	static_any<size> a;
 	a.emplace<unsafe_to_copy>();
 
-	static_any<16> b(1234);
+	static_any<size> b(1234);
 	EXPECT_THROW(b = a, int);
 
 	EXPECT_FALSE(b.empty());
@@ -567,10 +575,11 @@ TEST(any_exception, copy_from_any)
 
 TEST(any_exception, move_from_any)
 {
-	static_any<16> a;
+	constexpr auto size = std::max(sizeof(int), sizeof(unsafe_to_copy));
+	static_any<size> a;
 	a.emplace<unsafe_to_copy>();
 
-	static_any<16> b(1234);
+	static_any<size> b(1234);
 	EXPECT_THROW(b = std::move(a), int);
 
 	EXPECT_EQ(1234, b.get<int>());
@@ -578,10 +587,11 @@ TEST(any_exception, move_from_any)
 
 TEST(any_exception, move_from_different_any)
 {
-	static_any<8> a;
+	constexpr auto size = std::max(sizeof(int), sizeof(unsafe_to_copy));
+	static_any<size> a;
 	a.emplace<unsafe_to_copy>();
 
-	static_any<16> b(1234);
+	static_any<2 * size> b(1234);
 	EXPECT_THROW(b = std::move(a), int);
 
 	EXPECT_EQ(1234, b.get<int>());
