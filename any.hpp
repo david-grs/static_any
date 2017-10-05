@@ -36,8 +36,7 @@ static void operation(operation_t operation, void* ptr1, void* ptr2)
 		}
 		case operation_t::query_noexcept:
 		{
-			*reinterpret_cast<bool*>(ptr1) = std::is_nothrow_copy_constructible<_T>::value;
-			*reinterpret_cast<bool*>(ptr2) = std::is_nothrow_move_constructible<_T>::value;
+			*reinterpret_cast<bool*>(ptr1) = std::is_nothrow_copy_constructible<_T>::value || std::is_nothrow_move_constructible<_T>::value;
 			break;
 		}
 		case operation_t::copy:
@@ -127,7 +126,7 @@ struct static_any
 	template<std::size_t _M>
 	static_any& operator=(static_any<_M>&& another)
 	{
-		assign_from_another(another);
+		assign_from_another(std::forward<static_any<_M>>(another));
 		return *this;
 	}
 
@@ -192,8 +191,22 @@ struct static_any
 	template<typename _T, typename... Args>
 	void emplace(Args&&... args)
 	{
+		static_any<_N> old;
+		// If we contain a type, keep in case _T construction fails
+		if(!empty() && query_noexcept())
+		{
+			old = std::move(*this);
+		}
 		destroy();
-		new(&buff_) _T(std::forward<Args>(args)...);
+		try {
+			new(&buff_) _T(std::forward<Args>(args)...);
+		}
+		catch(...) {
+			if(!old.empty()) {
+				*this = std::move(old);
+			}
+			throw;
+		}
 		function_ = detail::static_any::get_function_for_type<_T>();
 	}
 
@@ -286,6 +299,13 @@ private:
 		return size;
 	}
 
+	bool query_noexcept() const
+	{
+		bool can_noexcept;
+		function_(operation_t::query_noexcept, &can_noexcept, nullptr);
+		return can_noexcept;
+	}
+
 	void destroy()
 	{
 		if (function_)
@@ -343,10 +363,13 @@ private:
 		function_= another.function_;
 	}
 
-	template<std::size_t _M,
-			 typename _X=std::enable_if_t<_M <= _N>>
-	void assign_from_another(const static_any<_M>& another)
+	template<typename _T>
+	void assign_from_another(_T&& another)
 	{
+		// This function is only called from functions taking static_any<_M>
+		constexpr auto _M = std::decay<_T>::type::capacity();
+		static_assert(_M <= _N, "cannot assign from larger static_any");
+
 		if (another.function_ == nullptr) {
 			destroy();
 			return;
@@ -367,7 +390,12 @@ private:
 		destroy();
 
 		try {
-			another.function_(operation_t::copy, &buff_, other_data);
+			if(std::is_rvalue_reference<decltype(another)>::value) {
+				another.function_(operation_t::move, &buff_, other_data);
+			}
+			else {
+				another.function_(operation_t::copy, &buff_, other_data);
+			}
 		}
 		catch(...) {
 			if(!nothrow_copy) {

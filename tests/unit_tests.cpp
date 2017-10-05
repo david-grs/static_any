@@ -63,9 +63,9 @@ TEST(any, size)
 
 struct CallCounter
 {
-	CallCounter() { default_constructions++; }
-	CallCounter(const CallCounter&) { copy_constructions++; }
-	CallCounter(CallCounter&&) { move_constructions++; }
+	CallCounter() noexcept { default_constructions++; }
+	CallCounter(const CallCounter&) noexcept { copy_constructions++; }
+	CallCounter(CallCounter&&) noexcept { move_constructions++; }
 	~CallCounter() { destructions++; }
 
 	static void reset_counters()
@@ -192,7 +192,7 @@ TEST(any, any_move_ctor)
 	ASSERT_EQ(0, CallCounter::copy_constructions);
 	ASSERT_EQ(1, CallCounter::move_constructions);
 }
-/*
+
 TEST(any, any_move_assignment)
 {
 	constexpr auto size = std::max(sizeof(int), sizeof(CallCounter));
@@ -208,7 +208,7 @@ TEST(any, any_move_assignment)
 	ASSERT_EQ(0, CallCounter::copy_constructions);
 	ASSERT_EQ(1, CallCounter::move_constructions);
 }
-*/
+
 TEST(any, reassignment)
 {
 	CallCounter::reset_counters();
@@ -585,6 +585,42 @@ TEST(any_exception, move_from_any)
 	EXPECT_EQ(1234, b.get<int>());
 }
 
+TEST(any_exception, throwing_construct_strong_guarantee)
+{
+	constexpr auto size = std::max(sizeof(CallCounter), sizeof(unsafe_to_construct));
+	static_any<size> a;
+
+	CallCounter::reset_counters();
+	{
+		a.emplace<CallCounter>();
+		EXPECT_TRUE(a.has<CallCounter>());
+		EXPECT_THROW(a.emplace<unsafe_to_construct>(), int);
+		EXPECT_TRUE(a.has<CallCounter>());
+	}
+
+	EXPECT_EQ(1, CallCounter::default_constructions);
+}
+
+struct safe_to_move
+{
+	safe_to_move() noexcept = default;
+	[[noreturn]] safe_to_move(const safe_to_move&) { throw 123.0; }
+	safe_to_move(safe_to_move&&) noexcept = default;
+};
+
+TEST(any_exception, no_copy_with_strong_guarantee)
+{
+	constexpr auto size = std::max(sizeof(unsafe_to_copy), sizeof(unsafe_to_copy));
+	static_any<size> a;
+
+	CallCounter::reset_counters();
+	{
+		a.emplace<safe_to_move>();
+		EXPECT_THROW(a.emplace<unsafe_to_construct>(), int);
+		EXPECT_TRUE(a.has<safe_to_move>());
+	}
+}
+
 TEST(any_exception, move_from_different_any)
 {
 	constexpr auto size = std::max(sizeof(int), sizeof(unsafe_to_copy));
@@ -597,4 +633,10 @@ TEST(any_exception, move_from_different_any)
 	EXPECT_EQ(1234, b.get<int>());
 }
 
-
+TEST(any_exception, emplace_strong_guarantee)
+{
+	constexpr auto size = std::max(sizeof(int), sizeof(unsafe_to_construct));
+	static_any<size> a(1234);
+	EXPECT_THROW(a.emplace<unsafe_to_construct>(), int);
+	EXPECT_TRUE(a.has<int>());
+}
