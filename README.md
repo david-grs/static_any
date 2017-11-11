@@ -12,7 +12,7 @@ A container for generic (as *general*) data type &mdash; like boost.any. However
 
 
 static\_any\<S\> is also **safe**:
- - operations meet the strong exception guarantee
+ - operations meet the strong exception guarantee if the types involved provide `noexcept` constructors, and the basic exception guarantee otherwise
  - compile time check during the assignment, to ensure that its buffer is big enough to store the value
  - runtime check before any conversions, to ensure that the stored type is the one's requested by the user
 
