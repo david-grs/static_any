@@ -88,22 +88,22 @@ struct static_any
 		copy_or_move(std::forward<_T>(v));
 	}
 
-	template<std::size_t _M>
+	template<std::size_t _M, typename _X = std::enable_if_t<_M <= _N>>
 	static_any(const static_any<_M>& another)
 	{
 		copy_or_move_from_another(another);
 	}
 
-	template<std::size_t _M>
+	template<std::size_t _M, typename _X = std::enable_if_t<_M <= _N>>
 	static_any(static_any<_M>& another)
 	{
 		copy_or_move_from_another(std::forward<static_any<_M>>(another));
 	}
 
-	template<std::size_t _M>
+	template<std::size_t _M, typename _X = std::enable_if_t<_M <= _N>>
 	static_any(static_any<_M>&& another)
 	{
-		copy_or_move_from_another(std::forward<static_any<_M>>(another));
+		copy_or_move_from_another(std::move(another));
 	}
 
 	template<std::size_t _M>
@@ -292,22 +292,18 @@ private:
 	}
 
 	template <typename _T>
-	void copy_or_move_from_another(_T&& t)
-	{
-		using Tag = typename std::conditional<std::is_rvalue_reference<_T&&>::value,
-					detail::static_any::move_tag,
-					detail::static_any::copy_tag>::type;
-
-		copy_or_move_from_another(std::forward<_T>(t), Tag{});
-	}
-
-	template<std::size_t _M, typename Tag, typename _X = std::enable_if_t<_M <= _N>>
-	void copy_or_move_from_another(static_any<_M>&& another, Tag)
+	void copy_or_move_from_another(_T&& another)
 	{
 		assert(function_ == nullptr);
 
 		if (another.function_ == nullptr)
+		{
 			return;
+		}
+
+		using Tag = typename std::conditional<std::is_rvalue_reference<_T&&>::value,
+					detail::static_any::move_tag,
+					detail::static_any::copy_tag>::type;
 
 		void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.buff_.data()));
 
