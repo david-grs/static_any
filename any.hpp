@@ -331,20 +331,21 @@ private:
 		if (another.function_ == nullptr)
 			return;
 
+		static_any temp = *this;
 		void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.buff_.data()));
-		std::array<char, _N> buff;
 
 		try {
-			another.function_(operation_t::copy, buff.data(), other_data);
+			destroy();
+			assert(function_ == nullptr);
+
+			another.function_(operation_t::copy, buff_.data(), other_data);
 		}
 		catch(...) {
+			*this = std::move(temp);
 			throw;
 		}
 
-		destroy();
-
 		function_= another.function_;
-		buff_ = buff;
 	}
 
 	std::array<char, _N> buff_;
