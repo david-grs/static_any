@@ -70,7 +70,9 @@ struct CallCounter
 {
 	CallCounter() { default_constructions++; }
 	CallCounter(const CallCounter&) { copy_constructions++; }
+	CallCounter& operator=(const CallCounter&) { copy_constructions++; return *this; }
 	CallCounter(CallCounter&&) { move_constructions++; }
+	CallCounter& operator=(CallCounter&&) { move_constructions++; return *this;  }
 	~CallCounter() { destructions++; }
 
 	static void reset_counters()
