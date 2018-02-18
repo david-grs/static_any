@@ -221,20 +221,20 @@ private:
 		using NonConstT = std::remove_cv_t<std::remove_reference_t<_T>>;
 		NonConstT* non_const_t = const_cast<NonConstT*>(&t);
 
-		std::array<char, _N> buff;
+		static_any temp = *this;
 
 		try {
-			call_copy_or_move<_T&&>(buff.data(), non_const_t);
+			destroy();
+			assert(function_ == nullptr);
+
+			call_copy_or_move<_T&&>(buff_.data(), non_const_t);
 		}
 		catch(...) {
+			*this = std::move(temp);
 			throw;
 		}
 
-		destroy();
-		assert(function_ == nullptr);
-
 		function_ = detail::static_any::get_function_for_type<_T>();
-		buff_ = buff;
 	}
 
 	template <typename _RefT>
