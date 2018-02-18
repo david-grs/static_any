@@ -12,6 +12,9 @@
 
 namespace detail { namespace static_any {
 
+struct move_tag {};
+struct copy_tag {};
+
 // Pointer to administrative function, function that will by type-specific, and will be able to perform all the required operations
 enum class operation_t { query_type, query_size, copy, move, destroy };
 
