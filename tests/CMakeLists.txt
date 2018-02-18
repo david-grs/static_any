@@ -7,10 +7,7 @@ find_package (Threads)
 target_link_libraries(tests PRIVATE dyn_lib gtest ${CMAKE_THREAD_LIBS_INIT})
 
 if (MSVC)
-	set(cxx_compile_options /std:c++17 /W4 /WX)
-
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Ox")
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Od")
+	set(cxx_compile_options /std:c++14 /W4 /WX)
 
 	# VS 2017 removed tr1
 	add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
@@ -22,9 +19,6 @@ else()
 	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 		set(cxx_compile_options ${cxx_compile_options} -Wuseless-cast -Wduplicated-cond -Wlogical-op)
 	endif()
-
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
 
 	if (COVERAGE)
 		target_compile_options(tests PRIVATE --coverage)
