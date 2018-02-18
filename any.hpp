@@ -221,20 +221,20 @@ private:
 		using NonConstT = std::remove_cv_t<std::remove_reference_t<_T>>;
 		NonConstT* non_const_t = const_cast<NonConstT*>(&t);
 
-		std::array<char, _N> buff;
+		static_any temp = *this;
 
 		try {
-			call_copy_or_move<_T&&>(buff.data(), non_const_t);
+			destroy();
+			assert(function_ == nullptr);
+
+			call_copy_or_move<_T&&>(buff_.data(), non_const_t);
 		}
 		catch(...) {
+			*this = std::move(temp);
 			throw;
 		}
 
-		destroy();
-		assert(function_ == nullptr);
-
 		function_ = detail::static_any::get_function_for_type<_T>();
-		buff_ = buff;
 	}
 
 	template <typename _RefT>
@@ -331,20 +331,21 @@ private:
 		if (another.function_ == nullptr)
 			return;
 
+		static_any temp = *this;
 		void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.buff_.data()));
-		std::array<char, _N> buff;
 
 		try {
-			another.function_(operation_t::copy, buff.data(), other_data);
+			destroy();
+			assert(function_ == nullptr);
+
+			another.function_(operation_t::copy, buff_.data(), other_data);
 		}
 		catch(...) {
+			*this = std::move(temp);
 			throw;
 		}
 
-		destroy();
-
 		function_= another.function_;
-		buff_ = buff;
 	}
 
 	std::array<char, _N> buff_;
