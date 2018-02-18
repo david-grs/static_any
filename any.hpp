@@ -123,7 +123,7 @@ struct static_any
 	template<std::size_t _M>
 	static_any& operator=(static_any<_M>&& another)
 	{
-		assign_from_another(another);
+		assign_from_another(std::move(another));
 		return *this;
 	}
 
@@ -217,41 +217,19 @@ private:
 	}
 
 	template <typename _T>
-	void assign(_T&& t)
+	void assign(_T&&);
+
+	template <std::size_t _M, typename Tag, typename _X = std::enable_if_t<_M <= _N>>
+	void assign(const static_any<_M>&, Tag);
+
+	template <typename _T>
+	void assign_from_another(_T&& t)
 	{
-		static_assert(capacity() >= sizeof(_T), "_T is too big to be copied to static_any");
-
-		using NonConstT = std::remove_cv_t<std::remove_reference_t<_T>>;
-		NonConstT* non_const_t = const_cast<NonConstT*>(&t);
-
-		static_any temp = *this;
-
-		try {
-			destroy();
-			assert(function_ == nullptr);
-
-			call_copy_or_move<_T&&>(buff_.data(), non_const_t);
-		}
-		catch(...) {
-			*this = std::move(temp);
-			throw;
-		}
-
-		function_ = detail::static_any::get_function_for_type<_T>();
-	}
-
-	template <typename _RefT>
-	std::enable_if_t<std::is_rvalue_reference<_RefT>::value>
-	call_copy_or_move(void* this_void_ptr, void* other_void_ptr)
-	{
-		detail::static_any::get_function_for_type<_RefT>()(operation_t::move, this_void_ptr, other_void_ptr);
-	}
-
-	template <typename _RefT>
-	std::enable_if_t<!std::is_rvalue_reference<_RefT>::value>
-	call_copy_or_move(void* this_void_ptr, void* other_void_ptr)
-	{
-		detail::static_any::get_function_for_type<_RefT>()(operation_t::copy, this_void_ptr, other_void_ptr);
+		assign(std::forward<_T>(t),
+			   typename std::conditional<
+					std::is_rvalue_reference<_T&&>::value,
+					detail::static_any::move_tag,
+					detail::static_any::copy_tag>::type{});
 	}
 
 	const std::type_info& query_type() const
@@ -293,22 +271,38 @@ private:
 	}
 
 	template <typename _RefT>
-	std::enable_if_t<std::is_rvalue_reference<_RefT>::value>
-	call_copy_or_move(const function_ptr_t& function, void* this_void_ptr, void* other_void_ptr)
+	void call_copy_or_move(void* this_void_ptr, void* other_void_ptr)
+	{
+		using Tag = typename std::conditional<std::is_rvalue_reference<_RefT&&>::value,
+					detail::static_any::move_tag,
+					detail::static_any::copy_tag>::type;
+
+		auto function = detail::static_any::get_function_for_type<_RefT>();
+		call_operation(function, this_void_ptr, other_void_ptr, Tag{});
+	}
+
+	void call_operation(const function_ptr_t& function, void* this_void_ptr, void* other_void_ptr, detail::static_any::move_tag)
 	{
 		function(operation_t::move, this_void_ptr, other_void_ptr);
 	}
 
-	template <typename _RefT>
-	std::enable_if_t<!std::is_rvalue_reference<_RefT>::value>
-	call_copy_or_move(const function_ptr_t& function, void* this_void_ptr, void* other_void_ptr)
+	void call_operation(const function_ptr_t& function, void* this_void_ptr, void* other_void_ptr, detail::static_any::copy_tag)
 	{
 		function(operation_t::copy, this_void_ptr, other_void_ptr);
 	}
 
-	template<std::size_t _M,
-			 typename _X=std::enable_if_t<_M <= _N>>
-	void copy_or_move_from_another(static_any<_M>&& another)
+	template <typename _T>
+	void copy_or_move_from_another(_T&& t)
+	{
+		using Tag = typename std::conditional<std::is_rvalue_reference<_T&&>::value,
+					detail::static_any::move_tag,
+					detail::static_any::copy_tag>::type;
+
+		copy_or_move_from_another(std::forward<_T>(t), Tag{});
+	}
+
+	template<std::size_t _M, typename Tag, typename _X = std::enable_if_t<_M <= _N>>
+	void copy_or_move_from_another(static_any<_M>&& another, Tag)
 	{
 		assert(function_ == nullptr);
 
@@ -318,33 +312,9 @@ private:
 		void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.buff_.data()));
 
 		try {
-			call_copy_or_move<static_any<_M>&&>(another.function_, buff_.data(), other_data);
+			call_operation(another.function_, buff_.data(), other_data, Tag{});
 		}
 		catch(...) {
-			throw;
-		}
-
-		function_= another.function_;
-	}
-
-	template<std::size_t _M,
-			 typename _X=std::enable_if_t<_M <= _N>>
-	void assign_from_another(const static_any<_M>& another)
-	{
-		if (another.function_ == nullptr)
-			return;
-
-		static_any temp = *this;
-		void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.buff_.data()));
-
-		try {
-			destroy();
-			assert(function_ == nullptr);
-
-			another.function_(operation_t::copy, buff_.data(), other_data);
-		}
-		catch(...) {
-			*this = std::move(temp);
 			throw;
 		}
 
@@ -363,6 +333,55 @@ private:
 	template<typename _ValueT, std::size_t _S>
 	friend _ValueT& any_cast(static_any<_S>&);
 };
+
+template <std::size_t _N>
+template <typename _T>
+void static_any<_N>::assign(_T&& t)
+{
+	static_assert(capacity() >= sizeof(_T), "_T is too big to be copied to static_any");
+
+	using NonConstT = std::remove_cv_t<std::remove_reference_t<_T>>;
+	NonConstT* non_const_t = const_cast<NonConstT*>(&t);
+
+	static_any temp = *this;
+
+	try {
+		destroy();
+		assert(function_ == nullptr);
+
+		call_copy_or_move<_T&&>(buff_.data(), non_const_t);
+	}
+	catch(...) {
+		*this = std::move(temp);
+		throw;
+	}
+
+	function_ = detail::static_any::get_function_for_type<_T>();
+}
+
+template <std::size_t _N>
+template<std::size_t _M, typename Tag, typename _X>
+void static_any<_N>::assign(const static_any<_M>& another, Tag)
+{
+	if (another.function_ == nullptr)
+		return;
+
+	static_any temp = *this;
+	void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.buff_.data()));
+
+	try {
+		destroy();
+		assert(function_ == nullptr);
+
+		call_operation(another.function_, buff_.data(), other_data, Tag{});
+	}
+	catch(...) {
+		*this = std::move(temp);
+		throw;
+	}
+
+	function_= another.function_;
+}
 
 struct bad_any_cast : public std::bad_cast
 {

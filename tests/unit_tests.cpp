@@ -210,8 +210,8 @@ TEST(any, any_move_assignment)
 	b = std::move(a);
 
 	ASSERT_EQ(0, CallCounter::default_constructions);
-	ASSERT_EQ(1, CallCounter::copy_constructions);
-	ASSERT_EQ(0, CallCounter::move_constructions);
+	ASSERT_EQ(0, CallCounter::copy_constructions);
+	ASSERT_EQ(1, CallCounter::move_constructions);
 }
 
 TEST(any, reassignment)
