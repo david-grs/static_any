@@ -1,0 +1,2 @@
+support for move only types
+perf optimization when nothrow move
