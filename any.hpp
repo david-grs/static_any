@@ -474,7 +474,9 @@ struct static_any_t
 	static constexpr size_type capacity() { return _N; }
 
 	static_any_t() = default;
+	static_any_t(static_any_t&) = default;
 	static_any_t(const static_any_t&) = default;
+	static_any_t(static_any_t&&) = default;
 
 	template <typename _ValueT>
 	static_any_t(_ValueT&& t)
