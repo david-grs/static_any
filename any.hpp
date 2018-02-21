@@ -88,29 +88,25 @@ public:
 	static_any();
 	~static_any();
 
-	template<class _T, class = std::enable_if_t<!is_static_any_v<_T>>>
+	template <class _T,
+			  class = std::enable_if_t<!is_static_any_v<std::decay_t<_T>>>>
 	static_any(_T&&);
 
-	template<std::size_t _M, class = std::enable_if_t<_M <= _N>>
+	template <std::size_t _M, class = std::enable_if_t<_M <= _N>>
 	static_any(const static_any<_M>&);
 
-	template<std::size_t _M, class = std::enable_if_t<_M <= _N>>
+	template <std::size_t _M, class = std::enable_if_t<_M <= _N>>
 	static_any(static_any<_M>&&);
 
-	template<std::size_t _M>
-	static_any& operator=(const static_any<_M>& another);
-
-	template<std::size_t _M>
-	static_any& operator=(static_any<_M>& another);
-
-	template<std::size_t _M>
-	static_any& operator=(static_any<_M>&& another);
-
-	template <class _T>
-	static_any& operator=(const _T& t);
-
-	template <class _T>
+	template <class _T,
+			  class = std::enable_if_t<!is_static_any_v<std::decay_t<_T>>>>
 	static_any& operator=(_T&& t);
+
+	template <std::size_t _M>
+	static_any& operator=(const static_any<_M>&);
+
+	template <std::size_t _M>
+	static_any& operator=(static_any<_M>&&);
 
 	void reset();
 
@@ -218,16 +214,16 @@ static_any<_N>::static_any(static_any<_M>&& another)
 }
 
 template <std::size_t _N>
-template<std::size_t _M>
-static_any<_N>& static_any<_N>::operator=(const static_any<_M>& another)
+template <class _T, class>
+static_any<_N>& static_any<_N>::operator=(_T&& v)
 {
-	assign_from_another(another);
+	assign(std::forward<_T>(v));
 	return *this;
 }
 
 template <std::size_t _N>
 template<std::size_t _M>
-static_any<_N>& static_any<_N>::operator=(static_any<_M>& another)
+static_any<_N>& static_any<_N>::operator=(const static_any<_M>& another)
 {
 	assign_from_another(another);
 	return *this;
@@ -238,22 +234,6 @@ template<std::size_t _M>
 static_any<_N>& static_any<_N>::operator=(static_any<_M>&& another)
 {
 	assign_from_another(std::move(another));
-	return *this;
-}
-
-template <std::size_t _N>
-template <class _T>
-static_any<_N>& static_any<_N>::operator=(const _T& t)
-{
-	assign(std::forward<_T>(t));
-	return *this;
-}
-
-template <std::size_t _N>
-template <class _T>
-static_any<_N>& static_any<_N>::operator=(_T&& t)
-{
-	assign(std::forward<_T>(t));
 	return *this;
 }
 
