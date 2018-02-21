@@ -71,8 +71,15 @@ static function_ptr_t get_function_for_type()
 }}
 
 template <std::size_t _N>
-struct static_any
+class static_any
 {
+public:
+	template <typename _T>
+	struct is_static_any : public std::false_type {};
+
+	template <std::size_t _M>
+	struct is_static_any<static_any<_M>> : public std::true_type {};
+
 	using size_type = std::size_t;
 
 	static_any();
