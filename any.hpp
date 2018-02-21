@@ -80,21 +80,21 @@ public:
 	template <std::size_t _M>
 	struct is_static_any<static_any<_M>> : public std::true_type {};
 
+	template <class _T>
+	static constexpr bool is_static_any_v = is_static_any<_T>::value;
+
 	using size_type = std::size_t;
 
 	static_any();
 	~static_any();
 
-	template<class _T>
+	template<class _T, class = std::enable_if_t<!is_static_any_v<_T>>>
 	static_any(_T&&);
 
-	template<std::size_t _M, class _X = std::enable_if_t<_M <= _N>>
+	template<std::size_t _M, class = std::enable_if_t<_M <= _N>>
 	static_any(const static_any<_M>&);
 
-	template<std::size_t _M, class _X = std::enable_if_t<_M <= _N>>
-	static_any(static_any<_M>&);
-
-	template<std::size_t _M, class _X = std::enable_if_t<_M <= _N>>
+	template<std::size_t _M, class = std::enable_if_t<_M <= _N>>
 	static_any(static_any<_M>&&);
 
 	template<std::size_t _M>
@@ -195,8 +195,9 @@ static_any<_N>::~static_any()
 	destroy();
 }
 
+
 template <std::size_t _N>
-template<class _T>
+template<class _T, class>
 static_any<_N>::static_any(_T&& v)
 {
 	copy_or_move(std::forward<_T>(v));
@@ -207,13 +208,6 @@ template <std::size_t _M, class>
 static_any<_N>::static_any(const static_any<_M>& another)
 {
 	copy_or_move_from_another(another);
-}
-
-template <std::size_t _N>
-template<std::size_t _M, class>
-static_any<_N>::static_any(static_any<_M>& another)
-{
-	copy_or_move_from_another(std::forward<static_any<_M>>(another));
 }
 
 template <std::size_t _N>
