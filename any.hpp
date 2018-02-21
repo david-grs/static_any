@@ -20,7 +20,7 @@ enum class operation_t { query_type, query_size, copy, move, destroy };
 
 using function_ptr_t = void(*)(operation_t operation, void* this_ptr, void* other_ptr);
 
-template<typename _T>
+template<class _T>
 static void operation(operation_t operation, void* ptr1, void* ptr2)
 {
 	_T* this_ptr = reinterpret_cast<_T*>(ptr1);
@@ -62,7 +62,7 @@ static void operation(operation_t operation, void* ptr1, void* ptr2)
 	}
 }
 
-template<typename _T>
+template<class _T>
 static function_ptr_t get_function_for_type()
 {
 	return &static_any::operation<std::remove_cv_t<std::remove_reference_t<_T>>>;
@@ -73,21 +73,21 @@ static function_ptr_t get_function_for_type()
 template <std::size_t _N>
 struct static_any
 {
-	typedef std::size_t size_type;
+	using size_type = std::size_t;
 
 	static_any();
 	~static_any();
 
-	template<typename _T>
-	static_any(_T&& v);
+	template<class _T>
+	static_any(_T&&);
 
-	template<std::size_t _M, typename _X = std::enable_if_t<_M <= _N>>
+	template<std::size_t _M, class _X = std::enable_if_t<_M <= _N>>
 	static_any(const static_any<_M>&);
 
-	template<std::size_t _M, typename _X = std::enable_if_t<_M <= _N>>
+	template<std::size_t _M, class _X = std::enable_if_t<_M <= _N>>
 	static_any(static_any<_M>&);
 
-	template<std::size_t _M, typename _X = std::enable_if_t<_M <= _N>>
+	template<std::size_t _M, class _X = std::enable_if_t<_M <= _N>>
 	static_any(static_any<_M>&&);
 
 	template<std::size_t _M>
@@ -99,21 +99,21 @@ struct static_any
 	template<std::size_t _M>
 	static_any& operator=(static_any<_M>&& another);
 
-	template <typename _T>
+	template <class _T>
 	static_any& operator=(const _T& t);
 
-	template <typename _T>
+	template <class _T>
 	static_any& operator=(_T&& t);
 
 	void reset();
 
-	template<typename _T>
+	template<class _T>
 	const _T& get() const;
 
-	template<typename _T>
+	template<class _T>
 	_T& get();
 
-	template <typename _T>
+	template <class _T>
 	bool has() const;
 
 	const std::type_info& type() const;
@@ -124,23 +124,23 @@ struct static_any
 
 	static constexpr size_type capacity();
 
-	template<typename _T, typename... Args>
+	template<class _T, class... Args>
 	void emplace(Args&&... args);
 
 private:
 	using operation_t = detail::static_any::operation_t;
 	using function_ptr_t = detail::static_any::function_ptr_t;
 
-	template <typename _T>
+	template <class _T>
 	void copy_or_move(_T&& t);
 
-	template <typename _T>
+	template <class _T>
 	void assign(_T&&);
 
-	template <std::size_t _M, typename Tag, typename _X = std::enable_if_t<_M <= _N>>
+	template <std::size_t _M, class Tag, class _X = std::enable_if_t<_M <= _N>>
 	void assign(const static_any<_M>&, Tag);
 
-	template <typename _T>
+	template <class _T>
 	void assign_from_another(_T&& t);
 
 	const std::type_info& query_type() const;
@@ -149,20 +149,20 @@ private:
 
 	void destroy();
 
-	template<typename _T>
+	template<class _T>
 	const _T* as() const;
 
-	template<typename _T>
+	template<class _T>
 	_T* as();
 
-	template <typename _RefT>
+	template <class _RefT>
 	void call_copy_or_move(void* this_void_ptr, void* other_void_ptr);
 
 	void call_operation(const function_ptr_t& function, void* this_void_ptr, void* other_void_ptr, detail::static_any::move_tag);
 
 	void call_operation(const function_ptr_t& function, void* this_void_ptr, void* other_void_ptr, detail::static_any::copy_tag);
 
-	template <typename _T>
+	template <class _T>
 	void copy_or_move_from_another(_T&&);
 
 	std::array<char, _N> buff_;
@@ -171,10 +171,10 @@ private:
 	template<std::size_t _S>
 	friend struct static_any;
 
-	template<typename _ValueT, std::size_t _S>
+	template<class _ValueT, std::size_t _S>
 	friend _ValueT* any_cast(static_any<_S>*);
 
-	template<typename _ValueT, std::size_t _S>
+	template<class _ValueT, std::size_t _S>
 	friend _ValueT& any_cast(static_any<_S>&);
 };
 
@@ -189,28 +189,28 @@ static_any<_N>::~static_any()
 }
 
 template <std::size_t _N>
-template<typename _T>
+template<class _T>
 static_any<_N>::static_any(_T&& v)
 {
 	copy_or_move(std::forward<_T>(v));
 }
 
 template <std::size_t _N>
-template <std::size_t _M, typename>
+template <std::size_t _M, class>
 static_any<_N>::static_any(const static_any<_M>& another)
 {
 	copy_or_move_from_another(another);
 }
 
 template <std::size_t _N>
-template<std::size_t _M, typename>
+template<std::size_t _M, class>
 static_any<_N>::static_any(static_any<_M>& another)
 {
 	copy_or_move_from_another(std::forward<static_any<_M>>(another));
 }
 
 template <std::size_t _N>
-template<std::size_t _M, typename>
+template<std::size_t _M, class>
 static_any<_N>::static_any(static_any<_M>&& another)
 {
 	copy_or_move_from_another(std::move(another));
@@ -241,7 +241,7 @@ static_any<_N>& static_any<_N>::operator=(static_any<_M>&& another)
 }
 
 template <std::size_t _N>
-template <typename _T>
+template <class _T>
 static_any<_N>& static_any<_N>::operator=(const _T& t)
 {
 	assign(std::forward<_T>(t));
@@ -249,7 +249,7 @@ static_any<_N>& static_any<_N>::operator=(const _T& t)
 }
 
 template <std::size_t _N>
-template <typename _T>
+template <class _T>
 static_any<_N>& static_any<_N>::operator=(_T&& t)
 {
 	assign(std::forward<_T>(t));
@@ -260,7 +260,7 @@ template <std::size_t _N>
 void static_any<_N>::reset() { destroy(); }
 
 template <std::size_t _N>
-template <typename _T>
+template <class _T>
 bool static_any<_N>::has() const
 {
 	if (function_ == detail::static_any::get_function_for_type<_T>())
@@ -303,7 +303,7 @@ constexpr typename static_any<_N>::size_type static_any<_N>::capacity()
 }
 
 template <std::size_t _N>
-template<typename _T, typename... Args>
+template<class _T, class... Args>
 void static_any<_N>::emplace(Args&&... args)
 {
 	destroy();
@@ -312,7 +312,7 @@ void static_any<_N>::emplace(Args&&... args)
 }
 
 template <std::size_t _N>
-template <typename _T>
+template <class _T>
 void static_any<_N>::copy_or_move(_T&& t)
 {
 	static_assert(capacity() >= sizeof(_T), "_T is too big to be copied to static_any");
@@ -332,7 +332,7 @@ void static_any<_N>::copy_or_move(_T&& t)
 }
 
 template <std::size_t _N>
-template <typename _T>
+template <class _T>
 void static_any<_N>::assign_from_another(_T&& t)
 {
 	assign(std::forward<_T>(t),
@@ -372,21 +372,21 @@ void static_any<_N>::destroy()
 }
 
 template <std::size_t _N>
-template<typename _T>
+template<class _T>
 const _T* static_any<_N>::as() const
 {
 	return reinterpret_cast<const _T*>(buff_.data());
 }
 
 template <std::size_t _N>
-template<typename _T>
+template<class _T>
 _T* static_any<_N>::as()
 {
 	return reinterpret_cast<_T*>(buff_.data());
 }
 
 template <std::size_t _N>
-template <typename _RefT>
+template <class _RefT>
 void static_any<_N>::call_copy_or_move(void* this_void_ptr, void* other_void_ptr)
 {
 	using Tag = typename std::conditional<std::is_rvalue_reference<_RefT&&>::value,
@@ -410,7 +410,7 @@ void static_any<_N>::call_operation(const function_ptr_t& function, void* this_v
 }
 
 template <std::size_t _N>
-template <typename _T>
+template <class _T>
 void static_any<_N>::copy_or_move_from_another(_T&& another)
 {
 	assert(function_ == nullptr);
@@ -437,7 +437,7 @@ void static_any<_N>::copy_or_move_from_another(_T&& another)
 }
 
 template <std::size_t _N>
-template <typename _T>
+template <class _T>
 void static_any<_N>::assign(_T&& t)
 {
 	static_assert(capacity() >= sizeof(_T), "_T is too big to be copied to static_any");
@@ -462,7 +462,7 @@ void static_any<_N>::assign(_T&& t)
 }
 
 template <std::size_t _N>
-template<std::size_t _M, typename Tag, typename _X>
+template<std::size_t _M, class Tag, class _X>
 void static_any<_N>::assign(const static_any<_M>& another, Tag)
 {
 	if (another.function_ == nullptr)
@@ -523,7 +523,7 @@ bad_any_cast::bad_any_cast(const std::type_info& from,
 
 bad_any_cast::~bad_any_cast() {}
 
-template <typename _ValueT,
+template <class _ValueT,
 		  std::size_t _S>
 inline _ValueT* any_cast(static_any<_S>* a)
 {
@@ -533,14 +533,14 @@ inline _ValueT* any_cast(static_any<_S>* a)
 	return a->template as<_ValueT>();
 }
 
-template <typename _ValueT,
+template <class _ValueT,
 		  std::size_t _S>
 inline const _ValueT* any_cast(const static_any<_S>* a)
 {
 	return any_cast<const _ValueT>(const_cast<static_any<_S>*>(a));
 }
 
-template <typename _ValueT,
+template <class _ValueT,
 		  std::size_t _S>
 inline _ValueT& any_cast(static_any<_S>& a)
 {
@@ -550,7 +550,7 @@ inline _ValueT& any_cast(static_any<_S>& a)
 	return *a.template as<_ValueT>();
 }
 
-template <typename _ValueT,
+template <class _ValueT,
 		  std::size_t _S>
 inline const _ValueT& any_cast(const static_any<_S>& a)
 {
@@ -558,14 +558,14 @@ inline const _ValueT& any_cast(const static_any<_S>& a)
 }
 
 template <std::size_t _S>
-template <typename _T>
+template <class _T>
 const _T& static_any<_S>::get() const
 {
 	return any_cast<_T>(*this);
 }
 
 template <std::size_t _S>
-template <typename _T>
+template <class _T>
 _T& static_any<_S>::get()
 {
 	return any_cast<_T>(*this);
@@ -582,27 +582,27 @@ struct static_any_t
 	static_any_t() = default;
 	static_any_t(const static_any_t&) = default;
 
-	template <typename _ValueT>
+	template <class _ValueT>
 	static_any_t(_ValueT&& t)
 	{
 		copy(std::forward<_ValueT>(t));
 	}
 
-	template <typename _ValueT>
+	template <class _ValueT>
 	static_any_t& operator=(_ValueT&& t)
 	{
 		copy(std::forward<_ValueT>(t));
 		return *this;
 	}
 
-	template <typename _ValueT>
+	template <class _ValueT>
 	_ValueT& get() { return *reinterpret_cast<_ValueT*>(buff_.data()); }
 
-	template <typename _ValueT>
+	template <class _ValueT>
 	const _ValueT& get() const { return *reinterpret_cast<const _ValueT*>(buff_.data()); }
 
 private:
-	template <typename _ValueT>
+	template <class _ValueT>
 	void copy(_ValueT&& t)
 	{
 		using NonConstT = std::remove_cv_t<std::remove_reference_t<_ValueT>>;
