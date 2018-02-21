@@ -98,14 +98,17 @@ public:
 	template <std::size_t _M, class = std::enable_if_t<_M <= _N>>
 	static_any(static_any<_M>&&);
 
+	template <std::size_t _M, class = std::enable_if_t<_M <= _N>>
+	static_any(static_any<_M>&);
+
 	template <class _T,
 			  class = std::enable_if_t<!is_static_any_v<std::decay_t<_T>>>>
 	static_any& operator=(_T&& t);
 
-	template <std::size_t _M>
+	template <std::size_t _M, class = std::enable_if_t<_M <= _N>>
 	static_any& operator=(const static_any<_M>&);
 
-	template <std::size_t _M>
+	template <std::size_t _M, class = std::enable_if_t<_M <= _N>>
 	static_any& operator=(static_any<_M>&&);
 
 	void reset();
@@ -191,7 +194,6 @@ static_any<_N>::~static_any()
 	destroy();
 }
 
-
 template <std::size_t _N>
 template<class _T, class>
 static_any<_N>::static_any(_T&& v)
@@ -214,6 +216,13 @@ static_any<_N>::static_any(static_any<_M>&& another)
 }
 
 template <std::size_t _N>
+template <std::size_t _M, class>
+static_any<_N>::static_any(static_any<_M>& another)
+{
+	copy_or_move_from_another(std::forward<static_any<_M>>(another));
+}
+
+template <std::size_t _N>
 template <class _T, class>
 static_any<_N>& static_any<_N>::operator=(_T&& v)
 {
@@ -222,7 +231,7 @@ static_any<_N>& static_any<_N>::operator=(_T&& v)
 }
 
 template <std::size_t _N>
-template<std::size_t _M>
+template<std::size_t _M, class>
 static_any<_N>& static_any<_N>::operator=(const static_any<_M>& another)
 {
 	assign_from_another(another);
@@ -230,7 +239,7 @@ static_any<_N>& static_any<_N>::operator=(const static_any<_M>& another)
 }
 
 template <std::size_t _N>
-template<std::size_t _M>
+template<std::size_t _M, class>
 static_any<_N>& static_any<_N>::operator=(static_any<_M>&& another)
 {
 	assign_from_another(std::move(another));
