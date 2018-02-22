@@ -181,7 +181,7 @@ static void operation(operation_t operation, void* ptr1, void* ptr2)
 }
 
 template <class _T>
-static function_ptr_t get___functionfor_type()
+static function_ptr_t get_function_for_type()
 {
 	return &static_any::operation<std::remove_cv_t<std::remove_reference_t<_T>>>;
 }
@@ -263,7 +263,7 @@ template <std::size_t _N>
 template <class _T>
 bool static_any<_N>::has() const
 {
-	if (__function == detail::static_any::get___functionfor_type<_T>())
+	if (__function == detail::static_any::get_function_for_type<_T>())
 	{
 		return true;
 	}
@@ -308,7 +308,7 @@ void static_any<_N>::emplace(Args&&... args)
 {
 	destroy();
 	new(__buff.data()) _T(std::forward<Args>(args)...);
-	__function = detail::static_any::get___functionfor_type<_T>();
+	__function = detail::static_any::get_function_for_type<_T>();
 }
 
 template <std::size_t _N>
@@ -328,7 +328,7 @@ void static_any<_N>::copy_or_move(_T&& t)
 		throw;
 	}
 
-	__function = detail::static_any::get___functionfor_type<_T>();
+	__function = detail::static_any::get_function_for_type<_T>();
 }
 
 template <std::size_t _N>
@@ -393,7 +393,7 @@ void static_any<_N>::call_copy_or_move(void* this_void_ptr, void* other_void_ptr
 				detail::static_any::move_tag,
 				detail::static_any::copy_tag>::type;
 
-	auto function = detail::static_any::get___functionfor_type<_RefT>();
+	auto function = detail::static_any::get_function_for_type<_RefT>();
 	call_operation(function, this_void_ptr, other_void_ptr, Tag{});
 }
 
@@ -458,7 +458,7 @@ void static_any<_N>::assign(_T&& t)
 		throw;
 	}
 
-	__function = detail::static_any::get___functionfor_type<_T>();
+	__function = detail::static_any::get_function_for_type<_T>();
 }
 
 template <std::size_t _N>
