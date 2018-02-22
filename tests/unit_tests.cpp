@@ -497,57 +497,108 @@ TEST(any_t, simple)
 	ASSERT_EQ(7, a.get<int>());
 }
 
-struct unsafe_to_copy
+class UnsafeCopy
 {
-	unsafe_to_copy() =default;
-	[[noreturn]] unsafe_to_copy(const unsafe_to_copy&) { throw 123; }
+public:
+	explicit UnsafeCopy(int i) :
+		__i(i)
+	{}
+
+	UnsafeCopy(const UnsafeCopy& u) :
+		__i(u.__i)
+	{
+		if (__i == 42)
+			throw std::runtime_error("foo");
+	}
+
+	UnsafeCopy(UnsafeCopy&& u) noexcept :
+		__i(u.__i)
+	{}
+
+	int get() const { return __i; }
+
+private:
+	const int __i;
 };
+
+
+class UnsafeMove
+{
+public:
+	explicit UnsafeMove(int i) :
+		__i(i)
+	{}
+
+	UnsafeMove(const UnsafeMove& u) :
+		__i(u.__i)
+	{
+		if (__i == 42)
+			throw std::runtime_error("foo");
+	}
+
+	UnsafeMove(UnsafeMove&& u) :
+		__i(u.__i)
+	{
+		if (__i == 42)
+			throw std::runtime_error("foo");
+	}
+
+	int get() const { return __i; }
+
+private:
+	const int __i;
+};
+
+
+TEST(any, assignment_strong_guarantee)
+{
+	static_any<16> a(UnsafeCopy(42));
+
+	CallCounter::reset_counters();
+	EXPECT_THROW(a = 5, std::runtime_error);
+
+	ASSERT_FALSE(a.empty());
+	EXPECT_EQ(42, a.get<UnsafeCopy>().get());
+}
 
 TEST(any_exception, init)
 {
-	EXPECT_THROW(static_any<16> a = unsafe_to_copy(), int);
+	EXPECT_THROW(static_any<16> a = UnsafeMove(42), std::runtime_error);
 }
 
 TEST(any_exception, move)
 {
 	static_any<16> a;
 
-	EXPECT_THROW(a = unsafe_to_copy(), int);
+	EXPECT_THROW(a = UnsafeMove(42), std::runtime_error);
 	EXPECT_TRUE(a.empty());
 }
 
 TEST(any_exception, copy)
 {
 	static_any<16> a;
-	unsafe_to_copy u;
+	UnsafeCopy u(42);
 
-	EXPECT_THROW(a = u, int);
+	EXPECT_THROW(a = u, std::runtime_error);
 	EXPECT_TRUE(a.empty());
-}
-
-TEST(any_exception, restore_when_failed)
-{
-	static_any<16> a(1234);
-
-	EXPECT_THROW(a = unsafe_to_copy(), int);
-
-	EXPECT_FALSE(a.empty());
-	EXPECT_EQ(1234, a.get<int>());
-	EXPECT_EQ(typeid(int), a.type());
 }
 
 // doesn't compile on VS
 #ifndef _MSC_VER
 
-struct unsafe_to_construct
+struct UnsafeConstructor
 {
-	[[noreturn]] unsafe_to_construct() { throw 123; }
+	UnsafeConstructor(int i)
+	{
+		if (i == 42)
+			throw std::runtime_error("foo");
+	}
 };
 
 TEST(any_exception, emplace)
 {
 	static_any<16> a;
-	EXPECT_THROW(a.emplace<unsafe_to_construct>(), int);
+	EXPECT_THROW(a.emplace<UnsafeConstructor>(42), std::runtime_error);
 	EXPECT_TRUE(a.empty());
 }
 
@@ -556,10 +607,10 @@ TEST(any_exception, emplace)
 TEST(any_exception, copy_from_any)
 {
 	static_any<16> a;
-	a.emplace<unsafe_to_copy>();
+	a.emplace<UnsafeCopy>(42);
 
 	static_any<16> b(1234);
-	EXPECT_THROW(b = a, int);
+	EXPECT_THROW(b = a, std::runtime_error);
 
 	EXPECT_FALSE(b.empty());
 	EXPECT_EQ(1234, b.get<int>());
@@ -569,10 +620,10 @@ TEST(any_exception, copy_from_any)
 TEST(any_exception, move_from_any)
 {
 	static_any<16> a;
-	a.emplace<unsafe_to_copy>();
+	a.emplace<UnsafeMove>(42);
 
 	static_any<16> b(1234);
-	EXPECT_THROW(b = std::move(a), int);
+	EXPECT_THROW(b = std::move(a), std::runtime_error);
 
 	EXPECT_EQ(1234, b.get<int>());
 }
@@ -580,10 +631,10 @@ TEST(any_exception, move_from_any)
 TEST(any_exception, move_from_different_any)
 {
 	static_any<8> a;
-	a.emplace<unsafe_to_copy>();
+	a.emplace<UnsafeMove>(42);
 
 	static_any<16> b(1234);
-	EXPECT_THROW(b = std::move(a), int);
+	EXPECT_THROW(b = std::move(a), std::runtime_error);
 
 	EXPECT_EQ(1234, b.get<int>());
 }
