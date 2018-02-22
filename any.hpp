@@ -55,13 +55,25 @@ public:
 			  class = std::enable_if_t<!is_static_any_v<std::decay_t<_T>>>>
 	static_any& operator=(_T&& t);
 
-	static_any& operator=(const static_any&);
+	static_any& operator=(const static_any& any)
+	{
+		assign_from_any(any);
+		return *this;
+	}
 
 	template <std::size_t _M, class = std::enable_if_t<_M <= _N>>
-	static_any& operator=(const static_any<_M>&);
+	static_any& operator=(const static_any<_M>& any)
+	{
+		assign_from_any(any);
+		return *this;
+	}
 
 	template <std::size_t _M, class = std::enable_if_t<_M <= _N>>
-	static_any& operator=(static_any<_M>&&);
+	static_any& operator=(static_any<_M>&& any)
+	{
+		assign_from_any(std::move(any));
+		return *this;
+	}
 
 	void reset();
 
@@ -93,13 +105,10 @@ private:
 	void copy_or_move(_T&& t);
 
 	template <class _T>
-	void assign(_T&&);
+	void assign_from_any(_T&&);
 
-	template <std::size_t _M, class Tag, class _X = std::enable_if_t<_M <= _N>>
-	void assign(const static_any<_M>&, Tag);
-
-	template <class _T>
-	void assign_from_another(_T&& t);
+	template <std::size_t _M, class CopyOrMoveTag>
+	void assign_from_any(const static_any<_M>&, CopyOrMoveTag);
 
 	const std::type_info& query_type() const;
 
@@ -227,32 +236,29 @@ static_any<_N>::static_any(static_any<_M>&& another)
 
 template <std::size_t _N>
 template <class _T, class>
-static_any<_N>& static_any<_N>::operator=(_T&& v)
+static_any<_N>& static_any<_N>::operator=(_T&& t)
 {
-	assign(std::forward<_T>(v));
-	return *this;
-}
+	static_assert(capacity() >= sizeof(_T), "_T is too big to be copied to static_any");
 
-template <std::size_t _N>
-static_any<_N>& static_any<_N>::operator=(const static_any<_N>& another)
-{
-	assign_from_another(another);
-	return *this;
-}
+	using NonConstT = std::remove_cv_t<std::remove_reference_t<_T>>;
+	NonConstT* non_const_t = const_cast<NonConstT*>(&t);
 
-template <std::size_t _N>
-template <std::size_t _M, class>
-static_any<_N>& static_any<_N>::operator=(const static_any<_M>& another)
-{
-	assign_from_another(another);
-	return *this;
-}
+	static_any temp = std::move_if_noexcept(*this);
 
-template <std::size_t _N>
-template <std::size_t _M, class>
-static_any<_N>& static_any<_N>::operator=(static_any<_M>&& another)
-{
-	assign_from_another(std::move(another));
+	try
+	{
+		destroy();
+		assert(__function == nullptr);
+
+		call_copy_or_move<_T&&>(__buff.data(), non_const_t);
+	}
+	catch(...)
+	{
+		*this = std::move(temp);
+		throw;
+	}
+
+	__function = detail::static_any::get_function_for_type<_T>();
 	return *this;
 }
 
@@ -333,13 +339,39 @@ void static_any<_N>::copy_or_move(_T&& t)
 
 template <std::size_t _N>
 template <class _T>
-void static_any<_N>::assign_from_another(_T&& t)
+void static_any<_N>::assign_from_any(_T&& t)
 {
-	assign(std::forward<_T>(t),
-		   typename std::conditional<
-				std::is_rvalue_reference<_T&&>::value,
-				detail::static_any::move_tag,
-				detail::static_any::copy_tag>::type{});
+	using CopyOrMoveTag = typename std::conditional<
+		std::is_rvalue_reference<_T&&>::value,
+			detail::static_any::move_tag,
+			detail::static_any::copy_tag
+		>::type;
+
+	assign_from_any(std::forward<_T>(t), CopyOrMoveTag{});
+}
+
+template <std::size_t _N>
+template <std::size_t _M, class CopyOrMoveTag>
+void static_any<_N>::assign_from_any(const static_any<_M>& another, CopyOrMoveTag)
+{
+	if (another.__function == nullptr)
+		return;
+
+	static_any temp = std::move_if_noexcept(*this);
+	void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.__buff.data()));
+
+	try {
+		destroy();
+		assert(__function == nullptr);
+
+		call_operation(another.__function, __buff.data(), other_data, CopyOrMoveTag{});
+	}
+	catch(...) {
+		*this = std::move(temp);
+		throw;
+	}
+
+	__function= another.__function;
 }
 
 template <std::size_t _N>
@@ -430,55 +462,6 @@ void static_any<_N>::copy_or_move_from_another(_T&& another)
 		call_operation(another.__function, __buff.data(), other_data, Tag{});
 	}
 	catch(...) {
-		throw;
-	}
-
-	__function= another.__function;
-}
-
-template <std::size_t _N>
-template <class _T>
-void static_any<_N>::assign(_T&& t)
-{
-	static_assert(capacity() >= sizeof(_T), "_T is too big to be copied to static_any");
-
-	using NonConstT = std::remove_cv_t<std::remove_reference_t<_T>>;
-	NonConstT* non_const_t = const_cast<NonConstT*>(&t);
-
-	static_any temp = *this;
-
-	try {
-		destroy();
-		assert(__function == nullptr);
-
-		call_copy_or_move<_T&&>(__buff.data(), non_const_t);
-	}
-	catch(...) {
-		*this = std::move(temp);
-		throw;
-	}
-
-	__function = detail::static_any::get_function_for_type<_T>();
-}
-
-template <std::size_t _N>
-template <std::size_t _M, class Tag, class _X>
-void static_any<_N>::assign(const static_any<_M>& another, Tag)
-{
-	if (another.__function == nullptr)
-		return;
-
-	static_any temp = *this;
-	void* other_data = reinterpret_cast<void*>(const_cast<char*>(another.__buff.data()));
-
-	try {
-		destroy();
-		assert(__function == nullptr);
-
-		call_operation(another.__function, __buff.data(), other_data, Tag{});
-	}
-	catch(...) {
-		*this = std::move(temp);
 		throw;
 	}
 
