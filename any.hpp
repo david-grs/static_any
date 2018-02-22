@@ -105,6 +105,8 @@ public:
 			  class = std::enable_if_t<!is_static_any_v<std::decay_t<_T>>>>
 	static_any& operator=(_T&& t);
 
+	static_any& operator=(const static_any&);
+
 	template <std::size_t _M, class = std::enable_if_t<_M <= _N>>
 	static_any& operator=(const static_any<_M>&);
 
@@ -227,6 +229,13 @@ template <class _T, class>
 static_any<_N>& static_any<_N>::operator=(_T&& v)
 {
 	assign(std::forward<_T>(v));
+	return *this;
+}
+
+template <std::size_t _N>
+static_any<_N>& static_any<_N>::operator=(const static_any<_N>& another)
+{
+	assign_from_another(another);
 	return *this;
 }
 
