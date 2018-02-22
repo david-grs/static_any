@@ -15,58 +15,9 @@ namespace detail { namespace static_any {
 struct move_tag {};
 struct copy_tag {};
 
-// Pointer to administrative function, function that will by type-specific, and will be able to perform all the required operations
 enum class operation_t { query_type, query_size, copy, move, destroy };
 
 using function_ptr_t = void(*)(operation_t operation, void* this_ptr, void* other_ptr);
-
-template<class _T>
-static void operation(operation_t operation, void* ptr1, void* ptr2)
-{
-	_T* this_ptr = reinterpret_cast<_T*>(ptr1);
-
-	switch(operation)
-	{
-		case operation_t::query_type:
-		{
-			*reinterpret_cast<const std::type_info**>(ptr1) = &typeid(_T);
-			break;
-		}
-		case operation_t::query_size:
-		{
-			*reinterpret_cast<std::size_t*>(ptr1) = sizeof(_T);
-			break;
-		}
-		case operation_t::copy:
-		{
-			_T* other_ptr = reinterpret_cast<_T*>(ptr2);
-			assert(this_ptr);
-			assert(other_ptr);
-			new(this_ptr)_T(*other_ptr);
-			break;
-		}
-		case operation_t::move:
-		{
-			_T* other_ptr = reinterpret_cast<_T*>(ptr2);
-			assert(this_ptr);
-			assert(other_ptr);
-			new(this_ptr)_T(std::move(*other_ptr));
-			break;
-		}
-		case operation_t::destroy:
-		{
-			assert(this_ptr);
-			this_ptr->~_T();
-			break;
-		}
-	}
-}
-
-template<class _T>
-static function_ptr_t get_function_for_type()
-{
-	return &static_any::operation<std::remove_cv_t<std::remove_reference_t<_T>>>;
-}
 
 }}
 
@@ -184,6 +135,58 @@ private:
 	template<class _ValueT, std::size_t _S>
 	friend _ValueT& any_cast(static_any<_S>&);
 };
+
+namespace detail { namespace static_any {
+
+template<class _T>
+static void operation(operation_t operation, void* ptr1, void* ptr2)
+{
+	_T* this_ptr = reinterpret_cast<_T*>(ptr1);
+
+	switch(operation)
+	{
+	case operation_t::query_type:
+	{
+		*reinterpret_cast<const std::type_info**>(ptr1) = &typeid(_T);
+		break;
+	}
+	case operation_t::query_size:
+	{
+		*reinterpret_cast<std::size_t*>(ptr1) = sizeof(_T);
+		break;
+	}
+	case operation_t::copy:
+	{
+		_T* other_ptr = reinterpret_cast<_T*>(ptr2);
+		assert(this_ptr);
+		assert(other_ptr);
+		new(this_ptr)_T(*other_ptr);
+		break;
+	}
+	case operation_t::move:
+	{
+		_T* other_ptr = reinterpret_cast<_T*>(ptr2);
+		assert(this_ptr);
+		assert(other_ptr);
+		new(this_ptr)_T(std::move(*other_ptr));
+		break;
+	}
+	case operation_t::destroy:
+	{
+		assert(this_ptr);
+		this_ptr->~_T();
+		break;
+	}
+	}
+}
+
+template<class _T>
+static function_ptr_t get_function_for_type()
+{
+	return &static_any::operation<std::remove_cv_t<std::remove_reference_t<_T>>>;
+}
+
+}}
 
 template <std::size_t _N>
 static_any<_N>::static_any()
