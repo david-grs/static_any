@@ -127,7 +127,7 @@ private:
 	function_ptr_t function_ = nullptr;
 
 	template<std::size_t _S>
-	friend struct static_any;
+	friend class static_any;
 
 	template<class _ValueT, std::size_t _S>
 	friend _ValueT* any_cast(static_any<_S>*);
