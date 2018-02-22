@@ -170,32 +170,46 @@ TEST(any, reset_destruction)
 	ASSERT_EQ(1, CallCounter<0>::destructions);
 }
 
-TEST(any, value_assignment)
+TEST(any, value_copy_assignment)
 {
-	CallCounter<0> counter;
-	static_any<16> a = 1234;
+	static_any<16> a = CallCounter<0>();
+	CallCounter<1> counter;
 
 	CallCounter<0>::reset_counters();
+	CallCounter<1>::reset_counters();
+
 	a = counter;
 
 	ASSERT_EQ(0, CallCounter<0>::constructions);
 	ASSERT_EQ(1, CallCounter<0>::copy_constructions);
 	ASSERT_EQ(0, CallCounter<0>::move_constructions);
-	ASSERT_EQ(0, CallCounter<0>::destructions);
+	ASSERT_EQ(2, CallCounter<0>::destructions);
+
+	ASSERT_EQ(0, CallCounter<1>::constructions);
+	ASSERT_EQ(1, CallCounter<1>::copy_constructions);
+	ASSERT_EQ(0, CallCounter<1>::move_constructions);
+	ASSERT_EQ(0, CallCounter<1>::destructions);
 }
 
-TEST(any, move_assignment)
+TEST(any, value_move_assignment)
 {
-	CallCounter<0> counter;
-	static_any<16> a = 1234;
+	static_any<16> a = CallCounter<0>();
+	CallCounter<1> counter;
 
 	CallCounter<0>::reset_counters();
+	CallCounter<1>::reset_counters();
+
 	a = std::move(counter);
 
 	ASSERT_EQ(0, CallCounter<0>::constructions);
-	ASSERT_EQ(0, CallCounter<0>::copy_constructions);
-	ASSERT_EQ(1, CallCounter<0>::move_constructions);
-	ASSERT_EQ(0, CallCounter<0>::destructions);
+	ASSERT_EQ(1, CallCounter<0>::copy_constructions);
+	ASSERT_EQ(0, CallCounter<0>::move_constructions);
+	ASSERT_EQ(2, CallCounter<0>::destructions);
+
+	ASSERT_EQ(0, CallCounter<1>::constructions);
+	ASSERT_EQ(0, CallCounter<1>::copy_constructions);
+	ASSERT_EQ(1, CallCounter<1>::move_constructions);
+	ASSERT_EQ(0, CallCounter<1>::destructions);
 }
 
 TEST(any, any_move_ctor)
@@ -214,32 +228,44 @@ TEST(any, any_move_ctor)
 
 TEST(any, any_copy_assignment)
 {
-	CallCounter<0> counter;
-	static_any<16> a(counter);
-	static_any<16> b = 123;
+	static_any<16> a = CallCounter<0>();
+	static_any<16> b = CallCounter<1>();
 
 	CallCounter<0>::reset_counters();
+	CallCounter<1>::reset_counters();
+
 	b = a;
 
 	ASSERT_EQ(0, CallCounter<0>::constructions);
 	ASSERT_EQ(1, CallCounter<0>::copy_constructions);
 	ASSERT_EQ(0, CallCounter<0>::move_constructions);
 	ASSERT_EQ(0, CallCounter<0>::destructions);
+
+	ASSERT_EQ(0, CallCounter<1>::constructions);
+	ASSERT_EQ(1, CallCounter<1>::copy_constructions);
+	ASSERT_EQ(0, CallCounter<1>::move_constructions);
+	ASSERT_EQ(2, CallCounter<1>::destructions);
 }
 
 TEST(any, any_move_assignment)
 {
-	CallCounter<0> counter;
-	static_any<16> a(counter);
-	static_any<16> b = 123;
+	static_any<16> a = CallCounter<0>();
+	static_any<16> b = CallCounter<1>();
 
 	CallCounter<0>::reset_counters();
+	CallCounter<1>::reset_counters();
+
 	b = std::move(a);
 
 	ASSERT_EQ(0, CallCounter<0>::constructions);
 	ASSERT_EQ(0, CallCounter<0>::copy_constructions);
 	ASSERT_EQ(1, CallCounter<0>::move_constructions);
 	ASSERT_EQ(0, CallCounter<0>::destructions);
+
+	ASSERT_EQ(0, CallCounter<1>::constructions);
+	ASSERT_EQ(1, CallCounter<1>::copy_constructions);
+	ASSERT_EQ(0, CallCounter<1>::move_constructions);
+	ASSERT_EQ(2, CallCounter<1>::destructions);
 }
 
 TEST(any, not_empty_after_assignment)
