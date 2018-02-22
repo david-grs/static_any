@@ -216,16 +216,18 @@ TEST(any, any_move_assignment)
 
 TEST(any, reassignment)
 {
-	CallCounter::reset_counters();
 	CallCounter counter;
 
-	static_any<16> a(counter);
+	static_any<16> a = 1234;
+	ASSERT_EQ(1234, a.get<int>());
+
+	CallCounter::reset_counters();
 	a = counter;
 
-	ASSERT_EQ(1, CallCounter::default_constructions);
-	ASSERT_EQ(2, CallCounter::copy_constructions);
-	ASSERT_EQ(1, CallCounter::move_constructions);
-	ASSERT_EQ(2, CallCounter::destructions);
+	ASSERT_EQ(0, CallCounter::default_constructions);
+	ASSERT_EQ(1, CallCounter::copy_constructions);
+	ASSERT_EQ(0, CallCounter::move_constructions);
+	ASSERT_EQ(0, CallCounter::destructions);
 }
 
 TEST(any, not_empty_after_assignment)
