@@ -66,6 +66,26 @@ TEST(any, size)
 	ASSERT_EQ(0, a.size());
 }
 
+TEST(any, default_constructed_is_empty)
+{
+	static_any<16> a;
+	ASSERT_TRUE(a.empty());
+}
+
+TEST(any, contructed_with_param_non_empty)
+{
+	static_any<16> a(77); // will contain integer
+	ASSERT_FALSE(a.empty());
+}
+
+TEST(any, has)
+{
+	static_any<16> a(77); // will contain integer
+	ASSERT_TRUE(a.has<int>());
+	ASSERT_FALSE(a.has<double>());
+}
+
+template <std::size_t Index>
 class CallCounter
 {
 public:
@@ -90,145 +110,127 @@ public:
 	static int destructions;
 };
 
-int CallCounter::constructions = 0;
-int CallCounter::copy_constructions = 0;
-int CallCounter::move_constructions = 0;
-int CallCounter::destructions = 0;
-
-TEST(any, default_constructed_is_empty)
-{
-	static_any<16> a;
-	ASSERT_TRUE(a.empty());
-}
-
-TEST(any, contructed_with_param_non_empty)
-{
-	static_any<16> a(77); // will contain integer
-	ASSERT_FALSE(a.empty());
-}
-
-TEST(any, has)
-{
-	static_any<16> a(77); // will contain integer
-	ASSERT_TRUE(a.has<int>());
-	ASSERT_FALSE(a.has<double>());
-}
+template <std::size_t Index> int CallCounter<Index>::constructions = 0;
+template <std::size_t Index> int CallCounter<Index>::copy_constructions = 0;
+template <std::size_t Index> int CallCounter<Index>::move_constructions = 0;
+template <std::size_t Index> int CallCounter<Index>::destructions = 0;
 
 TEST(any, move_construct)
 {
-	CallCounter::reset_counters();
-	CallCounter counter;
+	CallCounter<0>::reset_counters();
+
+	CallCounter<0> counter;
 	static_any<16> a(std::move(counter));
 
-	ASSERT_EQ(1, CallCounter::constructions);
-	ASSERT_EQ(0, CallCounter::copy_constructions);
-	ASSERT_EQ(1, CallCounter::move_constructions);
-	ASSERT_EQ(0, CallCounter::destructions);
+	ASSERT_EQ(1, CallCounter<0>::constructions);
+	ASSERT_EQ(0, CallCounter<0>::copy_constructions);
+	ASSERT_EQ(1, CallCounter<0>::move_constructions);
+	ASSERT_EQ(0, CallCounter<0>::destructions);
 }
 
 TEST(any, copy_construct)
 {
-	CallCounter::reset_counters();
-	CallCounter counter;
+	CallCounter<0>::reset_counters();
+	CallCounter<0> counter;
 	static_any<16> a(counter);
 
-	ASSERT_EQ(1, CallCounter::constructions);
-	ASSERT_EQ(1, CallCounter::copy_constructions);
-	ASSERT_EQ(0, CallCounter::move_constructions);
-	ASSERT_EQ(0, CallCounter::destructions);
+	ASSERT_EQ(1, CallCounter<0>::constructions);
+	ASSERT_EQ(1, CallCounter<0>::copy_constructions);
+	ASSERT_EQ(0, CallCounter<0>::move_constructions);
+	ASSERT_EQ(0, CallCounter<0>::destructions);
 }
 
 TEST(any, destruction)
 {
-	CallCounter::reset_counters();
-	CallCounter counter;
+	CallCounter<0>::reset_counters();
+	CallCounter<0> counter;
 	{
 		static_any<16> a(counter);
 	}
 
-	ASSERT_EQ(1, CallCounter::destructions);
+	ASSERT_EQ(1, CallCounter<0>::destructions);
 }
 
 TEST(any, reset_destruction)
 {
-	CallCounter::reset_counters();
-	CallCounter counter;
+	CallCounter<0>::reset_counters();
+	CallCounter<0> counter;
 
 	static_any<16> a(counter);
 	a.reset();
 
-	ASSERT_EQ(1, CallCounter::destructions);
+	ASSERT_EQ(1, CallCounter<0>::destructions);
 }
 
 TEST(any, copy_assignment)
 {
-	CallCounter::reset_counters();
-	CallCounter counter;
+	CallCounter<0>::reset_counters();
+	CallCounter<0> counter;
 
 	static_any<16> a(1);
 	a = counter;
 
-	ASSERT_EQ(1, CallCounter::constructions);
-	ASSERT_EQ(1, CallCounter::copy_constructions);
-	ASSERT_EQ(0, CallCounter::move_constructions);
+	ASSERT_EQ(1, CallCounter<0>::constructions);
+	ASSERT_EQ(1, CallCounter<0>::copy_constructions);
+	ASSERT_EQ(0, CallCounter<0>::move_constructions);
 }
 
 TEST(any, move_assignment)
 {
-	CallCounter::reset_counters();
-	CallCounter counter;
+	CallCounter<0>::reset_counters();
+	CallCounter<0> counter;
 
 	static_any<16> a;
 	a = std::move(counter);
 
-	ASSERT_EQ(1, CallCounter::constructions);
-	ASSERT_EQ(0, CallCounter::copy_constructions);
-	ASSERT_EQ(1, CallCounter::move_constructions);
+	ASSERT_EQ(1, CallCounter<0>::constructions);
+	ASSERT_EQ(0, CallCounter<0>::copy_constructions);
+	ASSERT_EQ(1, CallCounter<0>::move_constructions);
 }
 
 TEST(any, any_move_ctor)
 {
-	CallCounter counter;
+	CallCounter<0> counter;
 	static_any<16> a(counter);
 
-	CallCounter::reset_counters();
+	CallCounter<0>::reset_counters();
 
 	static_any<16> b(std::move(a));
 
-	ASSERT_EQ(0, CallCounter::constructions);
-	ASSERT_EQ(0, CallCounter::copy_constructions);
-	ASSERT_EQ(1, CallCounter::move_constructions);
+	ASSERT_EQ(0, CallCounter<0>::constructions);
+	ASSERT_EQ(0, CallCounter<0>::copy_constructions);
+	ASSERT_EQ(1, CallCounter<0>::move_constructions);
 }
 
 TEST(any, any_move_assignment)
 {
-	CallCounter counter;
+	CallCounter<0> counter;
 	static_any<16> a(counter);
 
-	CallCounter::reset_counters();
+	CallCounter<0>::reset_counters();
 
 	static_any<16> b = 123;
 	b = std::move(a);
 
-	ASSERT_EQ(0, CallCounter::constructions);
-	ASSERT_EQ(0, CallCounter::copy_constructions);
-	ASSERT_EQ(1, CallCounter::move_constructions);
+	ASSERT_EQ(0, CallCounter<0>::constructions);
+	ASSERT_EQ(0, CallCounter<0>::copy_constructions);
+	ASSERT_EQ(1, CallCounter<0>::move_constructions);
 }
 
 TEST(any, reassignment)
 {
-	CallCounter counter;
+	CallCounter<0> counter;
 
 	static_any<16> a = 1234;
 	ASSERT_EQ(1234, a.get<int>());
 
-	CallCounter::reset_counters();
+	CallCounter<0>::reset_counters();
 	a = counter;
 
-	ASSERT_EQ(0, CallCounter::constructions);
-	ASSERT_EQ(1, CallCounter::copy_constructions);
-	ASSERT_EQ(0, CallCounter::move_constructions);
-	ASSERT_EQ(0, CallCounter::destructions);
+	ASSERT_EQ(0, CallCounter<0>::constructions);
+	ASSERT_EQ(1, CallCounter<0>::copy_constructions);
+	ASSERT_EQ(0, CallCounter<0>::move_constructions);
+	ASSERT_EQ(0, CallCounter<0>::destructions);
 }
 
 TEST(any, not_empty_after_assignment)
@@ -376,14 +378,15 @@ TEST(any, emplace_params)
 
 TEST(any, destroyed_after_emplace)
 {
-	CallCounter::reset_counters();
+	CallCounter<0>::reset_counters();
+
 	{
 		static_any<32> a;
-		a.emplace<CallCounter>();
+		a.emplace<CallCounter<0>>();
 	}
 
-	EXPECT_EQ(1, CallCounter::constructions);
-	EXPECT_EQ(1, CallCounter::destructions);
+	EXPECT_EQ(1, CallCounter<0>::constructions);
+	EXPECT_EQ(1, CallCounter<0>::destructions);
 }
 
 TEST(any, any_cast_pointer_correct_type)
@@ -555,7 +558,7 @@ TEST(any, assignment_strong_guarantee)
 {
 	static_any<16> a(UnsafeCopy(42));
 
-	CallCounter::reset_counters();
+	CallCounter<0>::reset_counters();
 	EXPECT_THROW(a = 5, std::runtime_error);
 
 	ASSERT_FALSE(a.empty());
