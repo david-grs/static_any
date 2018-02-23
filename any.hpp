@@ -10,10 +10,13 @@
 #include <sstream>
 #include <string>
 
+
 namespace detail { namespace static_any {
 
 struct move_tag {};
 struct copy_tag {};
+struct throw_tag {};
+struct nothrow_tag {};
 
 enum class operation_t { query_type, query_size, copy, move, destroy };
 
@@ -100,6 +103,12 @@ public:
 private:
 	using operation_t = detail::static_any::operation_t;
 	using function_ptr_t = detail::static_any::function_ptr_t;
+
+	template <class _T>
+	void assign(_T&& t, detail::static_any::throw_tag);
+
+	template <class _T>
+	void assign(_T&& t, detail::static_any::nothrow_tag);
 
 	template <class _T>
 	void copy_or_move(_T&& t);
@@ -238,12 +247,28 @@ template <std::size_t _N>
 template <class _T, class>
 static_any<_N>& static_any<_N>::operator=(_T&& t)
 {
+	constexpr const bool canThrow =
+			(std::is_rvalue_reference<_T&&>::value && std::is_nothrow_move_constructible<_T>::value)
+			|| (std::is_lvalue_reference<_T&&>::value && std::is_nothrow_copy_constructible<_T>::value);
+
+	using ThrowTag = typename std::conditional<canThrow,
+			detail::static_any::throw_tag,
+			detail::static_any::nothrow_tag>::type;
+
+	assign(std::forward<_T>(t), ThrowTag{});
+	return *this;
+}
+
+template <std::size_t _N>
+template <class _T>
+void static_any<_N>::assign(_T&& t, detail::static_any::throw_tag)
+{
 	static_assert(capacity() >= sizeof(_T), "_T is too big to be copied to static_any");
+
+	static_any temp = std::move(*this);
 
 	using NonConstT = std::remove_cv_t<std::remove_reference_t<_T>>;
 	NonConstT* non_const_t = const_cast<NonConstT*>(&t);
-
-	static_any temp = std::move_if_noexcept(*this);
 
 	try
 	{
@@ -259,7 +284,23 @@ static_any<_N>& static_any<_N>::operator=(_T&& t)
 	}
 
 	__function = detail::static_any::get_function_for_type<_T>();
-	return *this;
+}
+
+template <std::size_t _N>
+template <class _T>
+void static_any<_N>::assign(_T&& t, detail::static_any::nothrow_tag)
+{
+	static_assert(capacity() >= sizeof(_T), "_T is too big to be copied to static_any");
+
+	using NonConstT = std::remove_cv_t<std::remove_reference_t<_T>>;
+	NonConstT* non_const_t = const_cast<NonConstT*>(&t);
+
+	destroy();
+	assert(__function == nullptr);
+
+	call_copy_or_move<_T&&>(__buff.data(), non_const_t);
+
+	__function = detail::static_any::get_function_for_type<_T>();
 }
 
 template <std::size_t _N>
